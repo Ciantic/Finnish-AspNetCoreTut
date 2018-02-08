@@ -22,11 +22,11 @@ namespace KirjautumisEsimerkki.Controllers
         // Tämän actionin osoite: api/values/TyyppiTurvallinenPalautusMuoto2
         // HTTP verbi: GET
         // maaginen tekstinpätkä [action] korvataan siis metodin nimellä
-        // palautetaan objekti
+        // palautetaan JSON objekti
         [HttpGet("[action]")] 
-        public EsimerkkiActionModel TyyppiTurvallinenPalautusMuoto()
+        public EsimerkkiLuokka TyyppiTurvallinenPalautusMuoto()
         {
-            return new EsimerkkiActionModel() {
+            return new EsimerkkiLuokka() {
                 Id = 123,
                 Jotain = "arvo"
             };
@@ -38,7 +38,7 @@ namespace KirjautumisEsimerkki.Controllers
         // Palautetaan JSON tekstiarvo 
         [HttpPost("[action]")]
         public string TyyppiTurvallinenSisaantuloMuoto(
-            [FromBody] EsimerkkiActionModel value)
+            [FromBody] EsimerkkiLuokka value)
         {
             return "ok";
         }
@@ -67,7 +67,7 @@ namespace KirjautumisEsimerkki.Controllers
             };
         }
 
-        public class EsimerkkiActionModel {
+        public class EsimerkkiLuokka {
             public int Id { get; set; }
             public string Jotain { get; set; }
         }

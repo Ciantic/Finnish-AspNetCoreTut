@@ -84,7 +84,9 @@ ASP.NET Core 2:ssa kaikki riippuvuudet ovat metapaketissa `Microsoft.AspNetCore.
 
 ### dotnet watch
 
-Projektitiedostoon (csproj) kannattaa ensimmäisenä lisätä `watch` työkalu, muokkaa tiedostoa ja lisää tänne yksi xml elementti:
+Tarkoituksena on kääntää ja käynnistää ohjelma automaattisesti uudestaan kun ohjelmakoodia muokataan, tämä nopeuttaa työtäsi kun muokkaat ohjelmaa.
+
+Projektitiedostoon (csproj) pitää lisätä `watch` työkalun asentamista varten yksi xml elementti:
 
 ```xml
 <ItemGroup>
@@ -103,7 +105,11 @@ Tämän jälkeen ohjelman voi käynnistää `watch` työkalulla:
 dotnet watch run
 ```
 
-Watch työkalulle annetaan parametrina toiminto esimerkiksi `run` joka käynnistää ja kääntää ohjelman automaattisesti kun ohjelmakoodia muokataan, tämä nopeuttaa työtäsi kun muokkaat ohjelmaa. Samoin watch työkalulla voi myös ajaa testit automaattisesti esimerkiksi `dotnet watch test`.
+Watch työkalulle annetaan parametrina toiminto esimerkiksi `run` joka käynnistää ja kääntää ohjelman automaattisesti kun ohjelmakoodia muokataan. Samoin watch työkalulla voi myös ajaa testit automaattisesti esimerkiksi `dotnet watch test`.
+
+### Visual Studio Code
+
+Jos ei halua tai pysty asentamaan Visual Studioa, suosittelen käyttämään [Visual Studio Code editoria](https://code.visualstudio.com/), tähän löytyy [C# lisäosa](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) joka osaa hyödyllisimmät temput kuten `Ctrl+.` joka osaa etsiä kursorin alla olevan riippuvuuden ja syöttämään `using` lauseen automaattisesti tiedostoon.
 
 ## Rajapinnan määrittely Routing, Controller ja action
 
@@ -128,11 +134,11 @@ public class ValuesController : Controller
     // Tämän actionin osoite: api/values/TyyppiTurvallinenPalautusMuoto2
     // HTTP verbi: GET
     // maaginen tekstinpätkä [action] korvataan siis metodin nimellä
-    // palautetaan objekti
+    // palautetaan JSON objekti
     [HttpGet("[action]")] 
-    public EsimerkkiActionModel TyyppiTurvallinenPalautusMuoto()
+    public EsimerkkiLuokka TyyppiTurvallinenPalautusMuoto()
     {
-        return new EsimerkkiActionModel() {
+        return new EsimerkkiLuokka() {
             Id = 123,
             Jotain = "arvo"
         };
@@ -144,7 +150,7 @@ public class ValuesController : Controller
     // Palautetaan JSON tekstiarvo 
     [HttpPost("[action]")]
     public string TyyppiTurvallinenSisaantuloMuoto(
-        [FromBody] EsimerkkiActionModel value)
+        [FromBody] EsimerkkiLuokka value)
     {
         return "ok";
     }
@@ -173,7 +179,7 @@ public class ValuesController : Controller
         };
     }
 
-    public class EsimerkkiActionModel {
+    public class EsimerkkiLuokka {
         public int Id { get; set; }
         public string Jotain { get; set; }
     }
@@ -247,9 +253,9 @@ Käynnistä ohjelma ja avaa osoite [http://localhost:5000/swagger/](http://local
 
 ![Swagger v1 api](swagger-values.png)
 
-Kannattaa testailla esimerkkejä, huomattavaa on että vain `EsimerkkiActionModel` objektin palauttava actioni on tyyppiturvallinen tapa palauttaa JSON objekteja. Kun rakentaa omaa API:a kannatta siis kaikkien actionien palautusarvona olla hyvin määritelty luokka, dokumentaation generoinnin pohjalla oleva ApiExplorer kirjasto ei osaa tyypittää `IActionResult` palauttavia metodeja eikä anonyymejä objekteja.
+Kannattaa testailla esimerkkejä, huomattavaa on että vain `EsimerkkiLuokka` objektin palauttava actioni on tyyppiturvallinen tapa palauttaa JSON objekteja. Kun rakentaa omaa API:a kannatta siis kaikkien actionien palautusarvona olla hyvin määritelty luokka, dokumentaation generoinnin pohjalla oleva ApiExplorer kirjasto ei osaa tyypittää `IActionResult` palauttavia metodeja eikä anonyymejä objekteja.
 
-Tämän huomaa myös selaamalla Swaggerin tuottamaa testeriä, vain rajapinnan endpointit `TyyppiTurvallinenSisaantuloMuoto`, ja `TyyppiTurvallinenPalautusMuoto` modeleista on tarkka tyyppi tiedossa.
+Tämän huomaa myös selaamalla Swaggerin tuottamaa testeriä, vain rajapinnan endpointit `TyyppiTurvallinenSisaantuloMuoto`, ja `TyyppiTurvallinenPalautusMuoto` modeleista on tarkka tyyppi tiedossa. Vaikka Swagger listaa `EsimerkkiLuokka` nimen, se on epäoleellinen tieto, koska JSON struktuurisesti tyypitetty joten vain kentät on tärkeitä.
 
 ## MVC pääkirjasto
 
