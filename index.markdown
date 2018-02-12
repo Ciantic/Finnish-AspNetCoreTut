@@ -10,7 +10,7 @@ ASP.NET Core sisältää useita kirjastoja, joista käsittelen tärkeimpiä:
 * Entity Framework Core - Microsoftin tekemä tietokantakirjasto ja ORM.
 * Identity Core - Kirjautumisjärjestelmän ja käyttäjien hallintaa.
 
-Asennan myös ohjelmaan [Swagger REST-rajapinta testerin](https://swagger.io/).
+Asennan myös ohjelmaan [Swagger REST-rajapintatesterin](https://swagger.io/).
 
 Seuraavissa kohdissa esimerkkinä rakennettu ohjelma toimii kaikilla .NET Core ympäristöillä.
 
@@ -206,9 +206,9 @@ Rajapinta osaa palauttaa ja ottaa sisäänsä suoraan dataa JSON muodossa, mutta
 
 [Lisätietoja: Routing to Controller Actions](https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/routing)
 
-## Rajapinta testeri
+## Rajapintatesteri Swagger
 
-ASP.NET Corelle on hyvä rajapinta testeri, jolle on valmiina testerin generoiva paketti, asenna Swaggerin riippuvuus komentoriviltä:
+ASP.NET Corelle on hyvä rajapintatesteri, jolle on valmiina testerin generoiva paketti, asenna Swaggerin riippuvuus komentoriviltä:
 
 ```bash
 dotnet add . package Swashbuckle.AspNetCore
@@ -257,6 +257,32 @@ Kannattaa testailla esimerkkejä, huomattavaa on että vain `EsimerkkiLuokka` ob
 
 Tämän huomaa myös selaamalla Swaggerin tuottamaa testeriä, vain rajapinnan endpointit `TyyppiTurvallinenSisaantuloMuoto`, ja `TyyppiTurvallinenPalautusMuoto` modeleista on tarkka tyyppi tiedossa. Vaikka Swagger listaa `EsimerkkiLuokka` nimen, se on epäoleellinen tieto, koska JSON struktuurisesti tyypitetty joten vain kentät on tärkeitä.
 
+## Tietokannan lisääminen EntityFrameworkCore tietokantakirjasto
+
+Tietokantaa varten käytetään usein Microsoftin tekemää EntityFrameworkCore kirjastoa joka luo tietokannan luokkien pohjalta. Ensin luodaan yleensä hakemisto ja namespace `Models` jonne tietokannan malli rakennetaan.
+
+Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän jolla voi lisätä, poistaa, ja muokata laskuja sekä asiakkaita.  Tietokantamallini on seuraava:
+
+![Tietokanta models](tietokanta-models.png)
+
+* ApplicationUser on ohjelman käyttäjät, tämä on yleensä nimetty näin ASP.NET tutoriaaleissa, se periytyy IdentityUser luokasta jossa on valmiiksi tiettyjä propertyjä kuten Email, Username, Password, jne.
+* Business on käyttäjän ylläpitämä yritys
+* Client on käyttäjän lista asiakkaista
+* Invoice on käyttäjän tekemä lasku
+* InvoiceRow on laskurivi
+* Email on taulu sähköposteja varten
+
+```
+Models.cs tiedoston sisältö
+```
+
+
+Riippuvuus suhteet 
+
+```text
+Store -> Service -> Controller
+```
+
 ## MVC pääkirjasto
 
 Middlewaret, Filtterit
@@ -284,14 +310,6 @@ Rajapintaluokka ja toteutusluokka voivat olla samoja, erityisesti kun järjestel
 Samalla tavalla toimivat `AddScoped` sekä `AddSingleton`, kullakin on myös useita overloadeja, esim. funktio joka palauttaa toteuttavan objektin.
 
 [Lisätietoja: Introduction to Dependency Injection in ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection)
-
-## Tietokannan lisääminen EntityFrameworkCore tietokantakirjasto
-
-Riippuvuus suhteet 
-
-```text
-Store -> Service -> Controller
-```
 
 ## Identity Core käyttäjä- ja roolienhallintakirjasto
 
