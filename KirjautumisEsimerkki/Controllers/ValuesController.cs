@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
-namespace KirjautumisEsimerkki.Controllers
+namespace Esimerkki1.Swagger.Controllers
 {
     // Tämä määrittelee alkuosaksi "api/values"
     [Route("api/[controller]")]

@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 
-namespace KirjautumisEsimerkki
+namespace Esimerkki1.Swagger
 {
     public class Startup
     {
