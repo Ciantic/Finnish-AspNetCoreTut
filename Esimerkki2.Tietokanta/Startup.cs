@@ -2,9 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Esimerkki2.Tietokanta.Db;
+using Esimerkki2.Tietokanta.Models;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,22 +18,36 @@ namespace Esimerkki2.Tietokanta
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
-        {
-            Configuration = configuration;
-        }
 
         public IConfiguration Configuration { get; }
+
+        public IHostingEnvironment Environment { get; }
+        
+        public Startup(IHostingEnvironment env, IConfiguration configuration)
+        {
+            Configuration = configuration;
+            Environment = env;
+        }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
             
-            // services.AddIdentity<ApplicationUser, IdentityRole>()
-            //     .AddEntityFrameworkStores<AppDbContext>()
-            //     .AddDefaultTokenProviders();
+            services.AddIdentity<ApplicationUser, ApplicationRole>()
+                .AddEntityFrameworkStores<AppDbContext>()
+                .AddDefaultTokenProviders();
 
             services.AddMvc();
+
+            services.AddDbContext<AppDbContext>(o => {
+                o.UseSqlite(Configuration.GetConnectionString("Database"));
+            });
+
+            if (Environment.IsProduction()) {
+                services.AddTransient<IInitDb, InitDbProduction>();
+            } else if (Environment.IsDevelopment()) {
+                services.AddTransient<IInitDb, InitDbDevelopment>();
+            }
 
             services.AddSwaggerGen(c =>
             {
@@ -51,6 +68,10 @@ namespace Esimerkki2.Tietokanta
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "API");
             });
+
+            using (var scoped = app.ApplicationServices.CreateScope()) {
+                scoped.ServiceProvider.GetRequiredService<IInitDb>().InitDb().GetAwaiter().GetResult();
+            }
         }
     }
 }

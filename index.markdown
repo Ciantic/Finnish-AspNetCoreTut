@@ -257,9 +257,13 @@ Kannattaa testailla esimerkkejä, huomattavaa on että vain `EsimerkkiLuokka` ob
 
 Tämän huomaa myös selaamalla Swaggerin tuottamaa testeriä, vain rajapinnan endpointit `TyyppiTurvallinenSisaantuloMuoto`, ja `TyyppiTurvallinenPalautusMuoto` modeleista on tarkka tyyppi tiedossa. Vaikka Swagger listaa `EsimerkkiLuokka` nimen, se on epäoleellinen tieto, koska JSON struktuurisesti tyypitetty joten vain kentät on tärkeitä.
 
-## Tietokannan lisääminen EntityFrameworkCore tietokantakirjasto
+[Voit myös tarkastella Swagger esimerkin ohjelmakoodeja: Esimerkki1.Swagger](Esimerkki1.Swagger/)
 
-Tietokantaa varten käytetään usein Microsoftin tekemää EntityFrameworkCore kirjastoa joka luo tietokannan luokkien pohjalta. Ensin luodaan yleensä hakemisto ja namespace `Models` jonne tietokannan malli rakennetaan.
+## Tietokannan lisääminen EntityFrameworkCore tietokantakirjastolla
+
+ASP.NET Core ohjelmistokehys ei pakota käyttämään tiettyä tietokantakirjastoa, mutta tämä kirjasto toimii parhaiten ASP.NET Coren kanssa kanssa valmiiksi. EntityFrameworkCore on Microsoftin tekemää tietokatnakirjastoa joka osaa mm. luoda tietokannan luokkien pohjalta ja sisältää Object Relational Mapperin (ORM) joka muuntaa C# LINQ kieltä SQL lauseiksi. 
+
+Ensin luodaan yleensä hakemisto ja namespace `Models` jonne tietokannan malli rakennetaan.
 
 Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän jolla voi lisätä, poistaa, ja muokata laskuja sekä asiakkaita.  Tietokantamallini on seuraava:
 
@@ -272,16 +276,142 @@ Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän j
 * InvoiceRow on laskurivi
 * Email on taulu sähköposteja varten
 
-```
-Models.cs tiedoston sisältö
+**Models/Models.cs**
+```cs
+using System;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Identity;
+
+namespace Esimerkki2.Tietokanta.Models
+{
+    // Nämä modelit ovat tässä samassa tiedostossa jotta niitä on helpompi demota,
+    // oikeasti ne kannataa siirtä omiin tiedostoihinsa kuten C#:ssa on tapana
+
+    public class ApplicationUser : IdentityUser<int> // Primary keyn tyyppi Int
+    {
+        // IdentityUser on ASP.NET Identity kirjaston yläluokka käyttäjiä
+        // varten.
+        //
+        // Tänne periytyy propertyjä kuten Username, Email, Password, ... vaikka
+        // et tarvisi kaikkia propertyjä jotka tänne periytyy, niin ne kannatta
+        // säilyttää jotta ei tule päänsärkyä Identity kirjaston kanssa
+        // yhteensopivuudesta, kaikkia propertyjä ei ole pakko käyttää omassa
+        // toteutuksessa
+    }
+
+    public class ApplicationRole : IdentityRole<int> {
+        // Käyttäjän rooli ohjelmassa, en käytä tätä tässä esimerkissä
+    }
+
+    public class Business
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+
+        // Suora viittaus
+        public int OwnerApplicationUserId { get; set; }
+        public ApplicationUser OwnerApplicationUser { get; set; }
+    }
+
+    public class Client
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Address { get; set; }
+        public string City { get; set; }
+        public string PostCode { get; set; }
+        public string Email { get; set; }
+        public string PhoneNumber { get; set; }
+
+        // Suora viittaus
+        public int BusinessId { get; set; }
+        public Business Business { get; set; }
+    }
+
+    public class Invoice
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+
+        // Sent on oikeasti huono idea laskutusohjelmalle, lähetetty lasku pitäisi
+        // viedä esim. uuteen tauluun ja arvot jäädyttää, mutta tämä on esimerkki
+        public DateTime? Sent { get; set; }
+
+        // Suora viittaus (mutta nullable huomaa "?")
+        public int? ClientId { get; set; }
+        public Client Client { get; set; }
+
+        // Suora viittaus
+        public int BusinessId { get; set; }
+        public Business Business { get; set; }
+
+        // Väärinpäin oleva navigointi (Inverse navigation), viittaa tämän
+        // laskun InvoiceRow listaan
+        public List<InvoiceRow> InvoiceRows { get; set; }
+
+        public DateTime Created { get; set; }
+        public DateTime Modified { get; set; }
+    }
+
+    public class InvoiceRow
+    {
+        public int Id { get; set; }
+
+        // Suora viittaus
+        public int InvoiceId { get; set; }
+        public Invoice Invoice { get; set; }
+
+        public string Name { get; set; }
+        public int Quantity { get; set; }
+        public Decimal Amount { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime Modified { get; set; }
+    }
+
+    public class Email
+    {
+        public int Id { get; set; }
+        public string To { get; set; }
+        public string From { get; set; }
+        public string Subject { get; set; }
+        public string Body { get; set; }
+    }
+}
 ```
 
+Tietokantamalli luodaan siis tekemällä normaaleja luokkia, EntityFrameworkCore luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja autoincrement, viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään.
 
-Riippuvuus suhteet 
+Tietokantaa varten tarvitaan `DbContext` luokasta periytyvä yläluokka jossa määrätään taulut ja mahdolliset lisäasetukset kullekkin taululle, esim erikoiset avaimet tms.
 
-```text
-Store -> Service -> Controller
+**AppDbContext.cs**
+```cs
+using Esimerkki2.Tietokanta.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace Esimerkki2.Tietokanta.Db
+{
+    public class AppDbContext : DbContext
+    { 
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        {
+        }
+        
+        public DbSet<Business> Business { get; set; }
+        public DbSet<Client> Client { get; set; }
+        public DbSet<Invoice> Invoice { get; set; }
+
+        public DbSet<InvoiceRow> InvoiceRow { get; set; }
+
+        public DbSet<Email> Email { get; set; }
+    }
+}
 ```
+
+Tietokantaan yhdistääksesi täytyy myös `appsettings.json` tiedostoa muokata:
+
+
+
 
 ## MVC pääkirjasto
 

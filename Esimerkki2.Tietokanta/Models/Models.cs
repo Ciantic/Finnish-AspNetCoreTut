@@ -7,16 +7,20 @@ namespace Esimerkki2.Tietokanta.Models
     // Nämä modelit ovat tässä samassa tiedostossa jotta niitä on helpompi demota,
     // oikeasti ne kannataa siirtä omiin tiedostoihinsa kuten C#:ssa on tapana
 
-    public class ApplicationUser : IdentityUser
+    public class ApplicationUser : IdentityUser<int> // Primary keyn tyyppi Int
     {
-        // IdentityUser on ASP.NET Identity kirjaston yläluokka käyttäjäjärjestelmää
+        // IdentityUser on ASP.NET Identity kirjaston yläluokka käyttäjiä
         // varten.
         //
-        // Tänne periytyy propertyjä kuten Username, Email, Password, ... vaikka et
-        // tarvisi kaikkia propertyjä jotka tänne periytyy, niin ne kannatta
+        // Tänne periytyy propertyjä kuten Username, Email, Password, ... vaikka
+        // et tarvisi kaikkia propertyjä jotka tänne periytyy, niin ne kannatta
         // säilyttää jotta ei tule päänsärkyä Identity kirjaston kanssa
         // yhteensopivuudesta, kaikkia propertyjä ei ole pakko käyttää omassa
         // toteutuksessa
+    }
+
+    public class ApplicationRole : IdentityRole<int> {
+        // Käyttäjän rooli ohjelmassa, en käytä tätä tässä esimerkissä
     }
 
     public class Business
@@ -25,7 +29,7 @@ namespace Esimerkki2.Tietokanta.Models
         public string Title { get; set; }
 
         // Suora viittaus
-        public string OwnerApplicationUserId { get; set; }
+        public int OwnerApplicationUserId { get; set; }
         public ApplicationUser OwnerApplicationUser { get; set; }
     }
 
@@ -36,6 +40,8 @@ namespace Esimerkki2.Tietokanta.Models
         public string Address { get; set; }
         public string City { get; set; }
         public string PostCode { get; set; }
+        public string Email { get; set; }
+        public string PhoneNumber { get; set; }
 
         // Suora viittaus
         public int BusinessId { get; set; }
@@ -45,23 +51,22 @@ namespace Esimerkki2.Tietokanta.Models
     public class Invoice
     {
         public int Id { get; set; }
-        public int Title { get; set; }
-        public string Info { get; set; }
+        public string Title { get; set; }
 
         // Sent on oikeasti huono idea laskutusohjelmalle, lähetetty lasku pitäisi
         // viedä esim. uuteen tauluun ja arvot jäädyttää, mutta tämä on esimerkki
-        public DateTime Sent { get; set; }
+        public DateTime? Sent { get; set; }
 
-        // Suora viittaus
-        public int ClientId { get; set; }
+        // Suora viittaus (mutta nullable huomaa "?")
+        public int? ClientId { get; set; }
         public Client Client { get; set; }
 
         // Suora viittaus
         public int BusinessId { get; set; }
         public Business Business { get; set; }
 
-        // Vastakkain oleva referenssi (Inverse navigation), viittaa tämän laskun
-        // InvoiceRow listaan
+        // Väärinpäin oleva navigointi (Inverse navigation), viittaa tämän
+        // laskun InvoiceRow listaan
         public List<InvoiceRow> InvoiceRows { get; set; }
 
         public DateTime Created { get; set; }
