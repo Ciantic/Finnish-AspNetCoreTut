@@ -14,7 +14,7 @@ Asennan myös ohjelmaan [Swagger REST-rajapintatesterin](https://swagger.io/).
 
 Seuraavissa kohdissa esimerkkinä rakennettu ohjelma toimii kaikilla .NET Core ympäristöillä.
 
-## Asennus ja perusteita
+## Asennus ja perusteita rajapinnan määrittelemiseksi
 
 Asenna ensin .NET Core omalle koneelle: [Windows](https://www.microsoft.com/net/learn/get-started/windows), [Linux](https://www.microsoft.com/net/learn/get-started/linuxredhat) tai [MacOS](https://www.microsoft.com/net/learn/get-started/macos)
 
@@ -30,7 +30,19 @@ Koeta että ohjelma käynnistyy ja toimii oikein:
 dotnet run
 ```
 
-Voit nyt navigoida selaimella suoraan osoitteeseen: [http://localhost:5000/api/Values/](http://localhost:5000/api/Values/) jonka pitäisi tulostaa JSON `["value1","value2"]`.
+Nyt ruudulle pitäisi tulla seuraavan kaltainen tuloste
+
+```text
+Using launch settings from ...
+Hosting environment: Production
+Content root path: ...
+Now listening on: http://localhost:5000
+Application started. Press Ctrl+C to shut down.
+```
+
+**Huomio!** Aseta ympäristömuuttuja `ASPNETCORE_ENVIRONMENT=Development` jotta dotnet käynnistyy development tilassa ja aja komento uudestaan. Ohjelman käynnistyessä pitäisi näkyä `Hosting environment: Development` kun ohjelma ajetaan development tilassa. Ympäristömuuttuja kannattaa asettaa globaalisti, yleensä vasta tuotannossa jätetään tämä pois.
+
+Voit nyt navigoida selaimella suoraan osoitteeseen: [http://localhost:5000/api/Values/](http://localhost:5000/api/Values/), portti saattaa vaihdella, sivun pitäisi näyttää JSON arvo `["value1","value2"]`.
 
 `dotnet` komento on luonut pohjan ja esimerkin hyvin pienelle REST API:lle. Esimerkki on luonut seuraavankaltaisen hakemistorakenteen:
 
@@ -111,7 +123,7 @@ Watch työkalulle annetaan parametrina toiminto esimerkiksi `run` joka käynnist
 
 Jos ei halua tai pysty asentamaan Visual Studioa, suosittelen käyttämään [Visual Studio Code editoria](https://code.visualstudio.com/), tähän löytyy [C# lisäosa](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp) joka osaa hyödyllisimmät temput kuten `Ctrl+.` joka osaa etsiä kursorin alla olevan riippuvuuden ja syöttämään `using` lauseen automaattisesti tiedostoon.
 
-## Rajapinnan määrittely Routing, Controller ja action
+### Rajapinnan määrittely Routing, Controller ja action
 
 Rajapinta määritellään kontrolleriluokilla, yleensä luokat ovat muotoa esimerkiksi `ValuesController` jossa `Values` saattaa viitata osaan rajapinnan HTTP osoitetta, mutta se ei ole välttämätöntä. Actionilla viitataan HTTP kyselyn käsittelevään metodiin kyseisessä luokassa.
 
@@ -206,7 +218,7 @@ Rajapinta osaa palauttaa ja ottaa sisäänsä suoraan dataa JSON muodossa, mutta
 
 [Lisätietoja: Routing to Controller Actions](https://docs.microsoft.com/en-us/aspnet/core/mvc/controllers/routing)
 
-## Rajapintatesteri Swagger
+### Rajapintatesteri Swagger
 
 ASP.NET Corelle on hyvä rajapintatesteri, jolle on valmiina testerin generoiva paketti, asenna Swaggerin riippuvuus komentoriviltä:
 
@@ -257,15 +269,17 @@ Kannattaa testailla esimerkkejä, huomattavaa on että vain `EsimerkkiLuokka` ob
 
 Tämän huomaa myös selaamalla Swaggerin tuottamaa testeriä, vain rajapinnan endpointit `TyyppiTurvallinenSisaantuloMuoto`, ja `TyyppiTurvallinenPalautusMuoto` modeleista on tarkka tyyppi tiedossa. Vaikka Swagger listaa `EsimerkkiLuokka` nimen, se on epäoleellinen tieto, koska JSON struktuurisesti tyypitetty joten vain kentät on tärkeitä.
 
-[Voit myös tarkastella Swagger esimerkin ohjelmakoodeja: Esimerkki1.Swagger](Esimerkki1.Swagger/)
+[Voit myös tarkastella tämän esimerkin ohjelmakoodeja: Esimerkki1.Swagger](Esimerkki1.Swagger/)
 
-## Tietokannan lisääminen EntityFrameworkCore tietokantakirjastolla
+## Tietokantaesimerkki 1. - perusesimerkki EntityFrameworkCore tietokantakirjastolla
 
 ASP.NET Core ohjelmistokehys ei pakota käyttämään tiettyä tietokantakirjastoa, mutta tämä kirjasto toimii parhaiten ASP.NET Coren kanssa kanssa valmiiksi. EntityFrameworkCore on Microsoftin tekemää tietokatnakirjastoa joka osaa mm. luoda tietokannan luokkien pohjalta ja sisältää Object Relational Mapperin (ORM) joka muuntaa C# LINQ kieltä SQL lauseiksi. 
 
 Ensin luodaan yleensä hakemisto ja namespace `Models` jonne tietokannan malli rakennetaan.
 
-Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän jolla voi lisätä, poistaa, ja muokata laskuja sekä asiakkaita.  Tietokantamallini on seuraava:
+Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän jolla voi lisätä, poistaa, ja muokata laskuja sekä asiakkaita. Ensimmäinen esimerkki pyrkii rakentamaan vain tietokannan ja näyttämään miten sitä voi kysellä REST rajapinnalla, tämä perusesimerkki on yksinkertainen esimerkki. Seuraavassa esimerkissä jatketaan jalostamalla tätä esimerkkiä paremmaksi.
+
+Tietokantamallini on seuraava:
 
 ![Tietokanta models](tietokanta-models.png)
 
@@ -276,7 +290,8 @@ Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän j
 * InvoiceRow on laskurivi
 * Email on taulu sähköposteja varten
 
-**Models/Models.cs**
+### Models/Models.cs tietokannan taulujen määrittely
+
 ```cs
 using System;
 using System.Collections.Generic;
@@ -347,7 +362,7 @@ namespace Esimerkki2.Tietokanta.Models
 
         // Väärinpäin oleva navigointi (Inverse navigation), viittaa tämän
         // laskun InvoiceRow listaan
-        public List<InvoiceRow> InvoiceRows { get; set; }
+        public IList<InvoiceRow> InvoiceRows { get; set; }
 
         public DateTime Created { get; set; }
         public DateTime Modified { get; set; }
@@ -359,6 +374,8 @@ namespace Esimerkki2.Tietokanta.Models
 
         // Suora viittaus
         public int InvoiceId { get; set; }
+        
+        [JsonIgnore] // Tämä estää referenssien loopin tässä esimerkissä
         public Invoice Invoice { get; set; }
 
         public string Name { get; set; }
@@ -379,11 +396,12 @@ namespace Esimerkki2.Tietokanta.Models
 }
 ```
 
-Tietokantamalli luodaan siis tekemällä normaaleja luokkia, EntityFrameworkCore luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja autoincrement, viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään.
+Tietokantamalli luodaan siis tekemällä normaaleja luokkia, EntityFrameworkCore luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja auto increment, viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään, näistä tulee `foreign key`. Konventioihin voi vaikutaa `DbContext` luokalla.
 
-Tietokantaa varten tarvitaan `DbContext` luokasta periytyvä yläluokka jossa määrätään taulut ja mahdolliset lisäasetukset kullekkin taululle, esim erikoiset avaimet tms.
+### AppDbContext.cs tietokannan käsittelyluokka
 
-**AppDbContext.cs**
+Tietokannan käsittelyä ja yhdistämistä varten tarvitaan `DbContext` luokasta periytyvä luokka jossa määrätään taulut ja mahdolliset lisäasetukset kullekkin taululle, esim erikoiset avaimet tms.
+
 ```cs
 using Esimerkki2.Tietokanta.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -397,20 +415,290 @@ namespace Esimerkki2.Tietokanta.Db
         {
         }
         
+        // Taulujen nimiksi tulee seuraavien propertyjen nimet, esim "Business" tai "Client"
         public DbSet<Business> Business { get; set; }
         public DbSet<Client> Client { get; set; }
         public DbSet<Invoice> Invoice { get; set; }
-
         public DbSet<InvoiceRow> InvoiceRow { get; set; }
-
         public DbSet<Email> Email { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder builder) {
+            // Täällä voi antaa eri asetuksia tauluille
+            // Esim. seuraava antaisi yhdistetyn avaimen
+            // builder.Entity<Business>().HasAlternateKey(t => new { t.Id, t.OwnerApplicationUserId })
+            
+            // Tai seuraavalla voisi antaa kummallisen nimen taululle
+            // builder.Entity<Business>().ToTable("OUTOLINTU");
+        }
     }
 }
 ```
 
-Tietokantaan yhdistääksesi täytyy myös `appsettings.json` tiedostoa muokata:
+### Startup.cs tietokantaan yhdistäminen ja testidata
+
+Seuraavaksi määritellään tietokanta johon yhdistetään, tässä käytetään SQLiteä esimerkkinä. Tarkoitus on rekisteröidä AppDbContext mm. riippuvuusinjektiota varten, lisää `ConfigureServices()` metodiin seuraavat rivit:
+
+```cs
+services.AddDbContext<AppDbContext>(o => {
+    // SQLite tietokannan nimi
+    o.UseSqlite("Data Source=esimerkki.development.db;");
+});
+```
+
+Tietokanta täytyy luoda, sitä varten listäään `Configure()` metodiin seuraavat rivit:
+
+```cs
+// AppDbContextin voi luoda vain scopen sisällä, joten ensin luodaan scope
+using (var scoped = app.ApplicationServices.CreateScope()) {
+    var dbContext = scoped.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    // Configure on synkroninen, joten tässä pitää odotella
+    CreateTestData(dbContext).GetAwaiter().GetResult();
+}
+```
+
+Sekä oma metodi tietokannan luomista varten, tässä käsketään ohjelmaa luomaan tietokanta aina uudestaan, lisäksi tässä luodaan testidataa:
+
+```cs
+
+private async Task CreateTestData(AppDbContext appDbContext) {
+    // Tuhoaa ja poistaa tietokannan joka kerta
+    await appDbContext.Database.EnsureDeletedAsync();
+    await appDbContext.Database.EnsureCreatedAsync();
+
+    // Luo testidata development tilalle
+    var acmeUser =  new ApplicationUser() {
+        Email = "testi@example.com",
+        UserName = "testi@example.com",
+    };
+
+    var acmeBusiness = new Business() {
+        Title = "Acme Inc",
+        OwnerApplicationUser = acmeUser,
+    };
+
+    var clients = new List<Client>() {
+        new Client() {
+            Business = acmeBusiness,
+            Title = "Kukkaismyynti Oy",
+            Address = "Kukkaiskuja 3",
+            City = "Jyväskylä",
+            PostCode = "40100",
+            Email = "kukkaismyynti@example.com",
+            PhoneNumber = "+3585012341234"
+        },
+        new Client() {
+            Business = acmeBusiness,
+            Title = "Kynäkauppiaat Ry",
+            Address = "Kynäkatu 123",
+            City = "Helsinki",
+            PostCode = "00100",
+            Email = "kynakauppias@example.com",
+            PhoneNumber = "+3585043214321"
+        }
+    };
+
+    var invoices = new List<Invoice>() {
+        new Invoice() {
+            Business = acmeBusiness, 
+            Client = clients[0],
+            Title = "Lasku ruusupuskista",
+            InvoiceRows = new List<InvoiceRow>() {
+                new InvoiceRow() {
+                    Amount = 15.0M,
+                    Created = DateTime.Now,
+                    Modified = DateTime.Now,
+                    Name = "Ruuspuskan siemenet",
+                    Quantity = 123
+                }
+            },
+            Modified = DateTime.Now,
+            Created = DateTime.Now,
+            Sent = null,
+        }
+    };
+
+    appDbContext.Business.Add(acmeBusiness);
+    appDbContext.Client.AddRange(clients);
+    appDbContext.Invoice.AddRange(invoices);
+    
+    await appDbContext.SaveChangesAsync();
+}
+```
+
+Yllä luodaan siis olioita ja ne lisätään AppDbContextiin jonka jälkeen se tallennetaan tietokantaan.
+
+### InvoicesController.cs
+
+Luodaan nyt esimerkkinä `InvoicesController` joka toimii rajapintana laskujen luomiselle ja hallitsemiselle.
+
+```cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Esimerkki2.Tietokanta.Db;
+using Esimerkki2.Tietokanta.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace Esimerkki2.Tietokanta.Controllers
+{
+    [Route("api/[controller]")]
+    public class InvoicesController
+    {
+        private readonly AppDbContext dbContext;
+
+        public InvoicesController(AppDbContext dbContext)
+        {
+            this.dbContext = dbContext;
+        }
+
+        [HttpGet("{id}")] 
+        public async Task<Invoice> GetById(int id)
+        {   
+            // Tässä esimerkissä palautetaan modeli, normaalisti sitä ei
+            // tehtäisi vaan jokaiselle end pointille määritellään oma
+            // palautusluokka, modelit eivät saa vuotaa rajapinnalle
+            return await dbContext.Invoice.Where(t => t.Id == id)
+                .Include(t => t.InvoiceRows)
+                .FirstOrDefaultAsync();
+        }
+
+        public class InvoiceCreateDto {
+            // Täällä määritellään kentät jota API:n kautta saa luoda
+        }
+
+        [HttpPost] 
+        public async Task<bool> Create([FromBody] InvoiceCreateDto invoiceCreateDto)
+        {   
+            // Tänne voisi toteuttaa laskun luonnin
+            // ... 
+            // dbContext.Invoice.Add(invoice);
+            // await dbContext.SaveChangesAsync();
+            return true;
+        }
+    }
+}
+```
+
+Nyt voit koittaa Swaggerillä, tai curlilla `curl -X GET 'http://localhost:5000/api/Invoices/1'`, ulos pitäisi tulla seuraavankaltainen JSON objekti:
+
+```json
+{
+  "id": 1,
+  "title": "Lasku ruusupuskista",
+  "sent": null,
+  "clientId": 1,
+  "client": null,
+  "businessId": 1,
+  "business": null,
+  "invoiceRows": [
+    {
+      "id": 1,
+      "invoiceId": 1,
+      "name": "Ruuspuskan siemenet",
+      "quantity": 123,
+      "amount": 15,
+      "created": "2018-02-17T23:14:42.5338954",
+      "modified": "2018-02-17T23:14:42.5339859"
+    }
+  ],
+  "created": "2018-02-17T23:14:42.5342508",
+  "modified": "2018-02-17T23:14:42.5341969"
+}
+```
+
+[Voit myös tarkastella tietokannan perusesimerkkin ohjelmakoodeja: Esimerkki2.Tietokanta](Esimerkki2.Tietokanta/)
 
 
+## Tietokantaesimerkki 2. - Repository pattern, Servicet
+
+Edellisessä esimerkissä tehtiin paljon pieniä asioita oikaisten, nyt korjataan nämä ja toteutetaan jotain pysyvämpää. Ensin kannattaa modelit jakaa omiin tiedostoihinsa.
+
+Tietokannan asetukset kovakoodattiin ohjelmakoodiin, siirretään ne nyt konfigurointi tiedostoon, avaa **appsettings.Development.json**, syötä tietokannan asetus sinne näin:
+
+```json
+"ConnectionStrings" : {
+    "Database" : "Data Source=esimerkki.development.db;"
+}
+```
+
+Nyt muokataan **Startup.cs** tiedostoa siten että edellisessä esimerkissä hardkoodattu yhteysosoite haetaan konfiguraatiotiedostota, avaa `ConfigureServices` metodi ja muokkaa se seuraavaksi:
+
+```cs
+services.AddDbContext<AppDbContext>(o => {
+    o.UseSqlite(Configuration.GetConnectionString("Database"));
+});
+```
+
+Siirretään tietokannan luontia varten tehty `CreateTestData()` metodi omaan luokkaansa, luodaan ensin rajapinta `IInitDb` joka toimii perustana tietokannan alustamiselle käynnistyessä.
+
+```cs
+public interface IInitDb
+{
+    Task Init();
+}
+```
+
+Luo luokka development tilaa varten joka toteuttaaa `IInitDb` rajapinnan:
+
+```cs
+public class InitDbDevelopment : IInitDb
+{
+    private readonly AppDbContext appDbContext;
+
+    public InitDbDevelopment(AppDbContext appDbContext)
+    {
+        this.appDbContext = appDbContext;
+    }
+
+    private async Task CreateTestData() {
+        // Siirrä edellisessä esimerkissä luomasi testidatan lisäys tänne
+    }
+
+    public async Task Init()
+    {
+        await CreateTestData();
+    }
+}
+```
+
+Esimerkkiohjelmakoodeissani on testi datan luonnille huomattavasti kehittyneempi esimerkki jossa generoin dataa testitietokantaan ohjelmallisesti. Jos haluat generoida dataa etkä kirjoittaa sitä itse se kannatta toteuttaa jotenkin vastaavasti.
+
+Luo myös luokka tuotantotilaa varten, vaikkei sitä tässä esimerkissä käytetä:
+
+```cs
+public class InitDbProduction : IInitDb
+{
+    public async Task Init()
+    {
+        // Voit ajaa erinäköisiä toimenpiteitä prosessin käynnistyksessä
+        // tässä kohti, joissain tilanteissa esim migraatioita tms.
+    }
+}
+```
+
+Nyt määrittellään toteutus `IInitDb` luokalle siitä riippuen kummassa tilassa ohjelma on käynnistetty. Lisätään **Startup.cs** tiedostoon poikkeus sen mukaan kummassa tilassa ohjelma on, muokkaa `ConfigureServices()` metodia:
+
+```cs
+if (Environment.IsProduction()) {
+    services.AddTransient<IInitDb, InitDbProduction>();
+} else if (Environment.IsDevelopment()) {
+    services.AddTransient<IInitDb, InitDbDevelopment>();
+}
+```
+
+Muuta testidatan kutsu **Startup.cs** tiedoston `Configure()` metodissa seuraavaksi:
+
+```cs
+using (var scoped = app.ApplicationServices.CreateScope()) {
+    scoped.ServiceProvider.GetRequiredService<IInitDb>()
+        .Init().GetAwaiter().GetResult();
+}
+```
+
+Tämä hakee `IInitDb` luokan toteutuksen ja kutsuu sen `Init()` metodia.
 
 
 ## MVC pääkirjasto

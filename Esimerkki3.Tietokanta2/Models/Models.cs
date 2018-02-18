@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
-using Newtonsoft.Json;
 
-namespace Esimerkki2.Tietokanta.Models
+namespace Esimerkki3.Tietokanta2.Models
 {
     // Nämä modelit ovat tässä samassa tiedostossa jotta niitä on helpompi demota,
     // oikeasti ne kannataa siirtä omiin tiedostoihinsa kuten C#:ssa on tapana
@@ -80,8 +79,6 @@ namespace Esimerkki2.Tietokanta.Models
 
         // Suora viittaus
         public int InvoiceId { get; set; }
-
-        [JsonIgnore] // Tämä estää referenssien loopin tässä esimerkissä
         public Invoice Invoice { get; set; }
 
         public string Name { get; set; }

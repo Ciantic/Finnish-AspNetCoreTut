@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 
-namespace Esimerkki2.Tietokanta.Db
+namespace Esimerkki3.Tietokanta2.Db
 {
     public interface IInitDb
     {
-        Task InitDb();
+        Task Init();
     }
 }

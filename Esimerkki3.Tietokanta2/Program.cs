@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Esimerkki2.Tietokanta
+namespace Esimerkki3.Tietokanta2
 {
     public class Program
     {
@@ -20,7 +20,6 @@ namespace Esimerkki2.Tietokanta
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
-                .UseUrls("http://*:5000")
                 .Build();
     }
 }

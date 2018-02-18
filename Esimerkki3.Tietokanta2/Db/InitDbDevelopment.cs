@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Threading.Tasks;
-using Esimerkki2.Tietokanta.Models;
+using Esimerkki3.Tietokanta2.Models;
 using Microsoft.AspNetCore.Identity;
 
-namespace Esimerkki2.Tietokanta.Db
+namespace Esimerkki3.Tietokanta2.Db
 {
     public class InitDbDevelopment : IInitDb
     {
@@ -332,7 +332,7 @@ namespace Esimerkki2.Tietokanta.Db
             await appDbContext.SaveChangesAsync();
         }   
 
-        public async Task InitDb()
+        public async Task Init()
         {
             await CreateTestDatabase();
             await CreateTestDataByGeneration();

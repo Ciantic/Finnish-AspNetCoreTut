@@ -32,22 +32,16 @@ namespace Esimerkki2.Tietokanta
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            
+            services.AddDbContext<AppDbContext>(o => {
+                // SQLite tietokannan nimi
+                o.UseSqlite("Data Source=esimerkki.development.db;");
+            });
+
             services.AddIdentity<ApplicationUser, ApplicationRole>()
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
 
             services.AddMvc();
-
-            services.AddDbContext<AppDbContext>(o => {
-                o.UseSqlite(Configuration.GetConnectionString("Database"));
-            });
-
-            if (Environment.IsProduction()) {
-                services.AddTransient<IInitDb, InitDbProduction>();
-            } else if (Environment.IsDevelopment()) {
-                services.AddTransient<IInitDb, InitDbDevelopment>();
-            }
 
             services.AddSwaggerGen(c =>
             {
@@ -69,9 +63,78 @@ namespace Esimerkki2.Tietokanta
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "API");
             });
 
+            // AppDbContextin voi luoda vain scopen sisällä, joten ensin luodaan scope
             using (var scoped = app.ApplicationServices.CreateScope()) {
-                scoped.ServiceProvider.GetRequiredService<IInitDb>().InitDb().GetAwaiter().GetResult();
+                var dbContext = scoped.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                // Configure on synkroninen, joten tässä pitää odotella
+                CreateTestData(dbContext).GetAwaiter().GetResult();
             }
+        }
+
+        private async Task CreateTestData(AppDbContext appDbContext) {
+            // Tuhoaa ja poistaa tietokannan joka kerta
+            await appDbContext.Database.EnsureDeletedAsync();
+            await appDbContext.Database.EnsureCreatedAsync();
+
+            // Luo testidata development tilalle
+
+            var acmeUser =  new ApplicationUser() {
+                Email = "testi@example.com",
+                UserName = "testi@example.com",
+            };
+
+            var acmeBusiness = new Business() {
+                Title = "Acme Inc",
+                OwnerApplicationUser = acmeUser,
+            };
+
+            var clients = new List<Client>() {
+                new Client() {
+                    Business = acmeBusiness,
+                    Title = "Kukkaismyynti Oy",
+                    Address = "Kukkaiskuja 3",
+                    City = "Jyväskylä",
+                    PostCode = "40100",
+                    Email = "kukkaismyynti@example.com",
+                    PhoneNumber = "+3585012341234"
+                },
+                new Client() {
+                    Business = acmeBusiness,
+                    Title = "Kynäkauppiaat Ry",
+                    Address = "Kynäkatu 123",
+                    City = "Helsinki",
+                    PostCode = "00100",
+                    Email = "kynakauppias@example.com",
+                    PhoneNumber = "+3585043214321"
+                }
+            };
+
+            var invoices = new List<Invoice>() {
+                new Invoice() {
+                    Business = acmeBusiness, 
+                    Client = clients[0],
+                    Title = "Lasku ruusupuskista",
+                    InvoiceRows = new List<InvoiceRow>() {
+                        new InvoiceRow() {
+                            Amount = 15.0M,
+                            Created = DateTime.Now,
+                            Modified = DateTime.Now,
+                            Name = "Ruuspuskan siemenet",
+                            Quantity = 123
+                        }
+                    },
+                    Modified = DateTime.Now,
+                    Created = DateTime.Now,
+                    Sent = null,
+                }
+            };
+
+            appDbContext.Business.Add(acmeBusiness);
+            appDbContext.Client.AddRange(clients);
+            appDbContext.Invoice.AddRange(invoices);
+            
+            await appDbContext.SaveChangesAsync();
         }
     }
 }
