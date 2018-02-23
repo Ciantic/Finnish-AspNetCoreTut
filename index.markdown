@@ -78,10 +78,10 @@ Tämä on ASP.NET Coren tärkein konfigurointitiedosto, joka on ASP.NET Corelle 
 Tästä objektista voi hakea asetuksia projektisi `appsettings.*.json`. tiedostoista, asetukset tulevat myös ympäristömuuttujasta (Environment).
 
 #### `void ConfigureServices(IServiceCollection services)` metodi
-Tässä metodissa konfiguroidaan ohjelmasi servicet, eli dependency injection riippuvuudet. Tästä tarkemmin alapuolella.
+Tässä metodissa konfiguroidaan ohjelmasi servicet, eli dependency injection riippuvuudet. Tästä tarkemmin alapuolella. Tästä on myös variantti `Configure{EnvironmentName}Services` jota kutsutaan esim development tilassa `ConfigureDevelopmentServices`.
 
 #### `void Configure(IApplicationBuilder app, IHostingEnvironment env)` metodi
-Täällä konfiguroidaan ohjelmasi HTTP pipeline, esimerkiksi middlewaret, jotka liittyvät HTTP Requestin kulkuun järjestelmän lävitse.
+Täällä konfiguroidaan ohjelmasi HTTP pipeline, esimerkiksi middlewaret, jotka liittyvät HTTP Requestin kulkuun järjestelmän lävitse. Tästä on myös variantti `Configure{EnvironmentName}` jota kutsutaan esim development tilassa `ConfigureDevelopment`.
 
 Asentamasi lisäkirjastot yleensä konfiguroidaan jommassa kummassa metodissa, yleinen konventio on että lisäkirjastot konfiguroidaan extensio metodeilla. `Configure`-metodissa lisäkirjastojen extensiot ovat nimetty `app.UseJokinToinenKirjasto()` ja `ConfigureServices`-metodissa `services.AddJokinToinenKirjasto()`.
 
@@ -271,22 +271,22 @@ Tämän huomaa myös selaamalla Swaggerin tuottamaa testeriä, vain rajapinnan e
 
 [Voit myös tarkastella tämän esimerkin ohjelmakoodeja: Esimerkki1.Swagger](Esimerkki1.Swagger/)
 
-## Tietokantaesimerkki 1. - perusesimerkki EntityFrameworkCore tietokantakirjastolla
+## Tietokantaesimerkki 1. - perusesimerkki Entity Framework Core tietokantakirjastolla
 
-ASP.NET Core ohjelmistokehys ei pakota käyttämään tiettyä tietokantakirjastoa, mutta tämä kirjasto toimii parhaiten ASP.NET Coren kanssa kanssa valmiiksi. EntityFrameworkCore on Microsoftin tekemää tietokatnakirjastoa joka osaa mm. luoda tietokannan luokkien pohjalta ja sisältää Object Relational Mapperin (ORM) joka muuntaa C# LINQ kieltä SQL lauseiksi. 
+ASP.NET Core ohjelmistokehys ei pakota käyttämään tiettyä tietokantakirjastoa, mutta Entity Framework Core (EF Core) kirjasto toimii parhaiten ASP.NET Coren kanssa kanssa valmiiksi. EF Core on Microsoftin tekemää tietokantakirjasto joka osaa mm. luoda tietokannan luokkien pohjalta, sisältää Object Relational Mapperin (ORM) ja osaa muuntaa C# LINQ kieltä SQL lauseiksi.
 
 Ensin luodaan yleensä hakemisto ja namespace `Models` jonne tietokannan malli rakennetaan.
 
-Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän jolla voi lisätä, poistaa, ja muokata laskuja sekä asiakkaita. Ensimmäinen esimerkki pyrkii rakentamaan vain tietokannan ja näyttämään miten sitä voi kysellä REST rajapinnalla, tämä perusesimerkki on yksinkertainen esimerkki. Seuraavassa esimerkissä jatketaan jalostamalla tätä esimerkkiä paremmaksi.
+Toteutan seuraavana pienen usean käyttäjän laskujen ylläpitojärjestelmän jossa yritys voi rekisteröityä sähköpostilla ohjelmaan. Yritys voi ohjelmassa lisätä, poistaa, ja muokata laskuja sekä asiakkaita. Ensimmäinen esimerkki pyrkii rakentamaan vain tietokannan ja näyttämään miten sitä voi kysellä REST rajapinnalla, tämä perusesimerkki on vajaavainen esimerkki. Seuraavassa esimerkissä jatketaan jalostamalla tätä paremmaksi.
 
 Tietokantamallini on seuraava:
 
 ![Tietokanta models](tietokanta-models.png)
 
 * ApplicationUser on ohjelman käyttäjät, tämä on yleensä nimetty näin ASP.NET tutoriaaleissa, se periytyy IdentityUser luokasta jossa on valmiiksi tiettyjä propertyjä kuten Email, Username, Password, jne.
-* Business on käyttäjän ylläpitämä yritys
-* Client on käyttäjän lista asiakkaista
-* Invoice on käyttäjän tekemä lasku
+* Business on yritys joka rekisteröityy ohjelmaan sähköpostilla
+* Client on yrityksen asiakas
+* Invoice on yrityksen tekemä lasku
 * InvoiceRow on laskurivi
 * Email on taulu sähköposteja varten
 
@@ -331,7 +331,7 @@ namespace Esimerkki2.Tietokanta.Models
     public class Client
     {
         public int Id { get; set; }
-        public string Title { get; set; }
+        public string Name { get; set; }
         public string Address { get; set; }
         public string City { get; set; }
         public string PostCode { get; set; }
@@ -396,7 +396,7 @@ namespace Esimerkki2.Tietokanta.Models
 }
 ```
 
-Tietokantamalli luodaan siis tekemällä normaaleja luokkia, EntityFrameworkCore luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja auto increment, viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään, näistä tulee `foreign key`. Konventioihin voi vaikutaa `DbContext` luokalla.
+Tietokantamalli luodaan siis tekemällä normaaleja luokkia, EF Core luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja auto increment, viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään, näistä tulee `foreign key`. Konventioihin voi vaikutaa `DbContext` luokalla.
 
 ### AppDbContext.cs tietokannan käsittelyluokka
 
@@ -436,7 +436,7 @@ namespace Esimerkki2.Tietokanta.Db
 
 ### Startup.cs tietokantaan yhdistäminen ja testidata
 
-Seuraavaksi määritellään tietokanta johon yhdistetään, tässä käytetään SQLiteä esimerkkinä. Tarkoitus on rekisteröidä AppDbContext mm. riippuvuusinjektiota varten, lisää `ConfigureServices()` metodiin seuraavat rivit:
+Seuraavaksi määritellään tietokanta johon yhdistetään, tässä käytetään SQLiteä esimerkkinä. Tarkoitus on rekisteröidä `AppDbContext` mm. riippuvuusinjektiota varten, lisää `ConfigureServices()` metodiin seuraavat rivit:
 
 ```cs
 services.AddDbContext<AppDbContext>(o => {
@@ -445,7 +445,9 @@ services.AddDbContext<AppDbContext>(o => {
 });
 ```
 
-Tietokanta täytyy luoda, sitä varten listäään `Configure()` metodiin seuraavat rivit:
+Tämä määrittelee että `AppDbContext` instanssin täytyy yhdistää `esimerkki.development.db` tiedostossa olevaan tietokantaan.
+
+Tietokanta täytyy luoda koska sitä ei ole vielä luotu, sitä varten listäään `Configure()` metodiin seuraavat rivit:
 
 ```cs
 // AppDbContextin voi luoda vain scopen sisällä, joten ensin luodaan scope
@@ -480,7 +482,7 @@ private async Task CreateTestData(AppDbContext appDbContext) {
     var clients = new List<Client>() {
         new Client() {
             Business = acmeBusiness,
-            Title = "Kukkaismyynti Oy",
+            Name = "Kukkaismyynti Oy",
             Address = "Kukkaiskuja 3",
             City = "Jyväskylä",
             PostCode = "40100",
@@ -489,7 +491,7 @@ private async Task CreateTestData(AppDbContext appDbContext) {
         },
         new Client() {
             Business = acmeBusiness,
-            Title = "Kynäkauppiaat Ry",
+            Name = "Kynäkauppiaat Ry",
             Address = "Kynäkatu 123",
             City = "Helsinki",
             PostCode = "00100",
@@ -526,7 +528,7 @@ private async Task CreateTestData(AppDbContext appDbContext) {
 }
 ```
 
-Yllä luodaan siis olioita ja ne lisätään AppDbContextiin jonka jälkeen se tallennetaan tietokantaan.
+Yllä luodaan siis olioita ja ne lisätään AppDbContextiin jonka jälkeen se tallennetaan tietokantaan. Tietokanta tyhjennetään ja luodaan joka käynnistyksellä uudelleen, tämä luo helpon kehitysympäristön jossa data on aina samassa tilassa joka käynnistyksellä.
 
 ### InvoicesController.cs
 
@@ -612,9 +614,72 @@ Nyt voit koittaa Swaggerillä, tai curlilla `curl -X GET 'http://localhost:5000/
 [Voit myös tarkastella tietokannan perusesimerkkin ohjelmakoodeja: Esimerkki2.Tietokanta](Esimerkki2.Tietokanta/)
 
 
-## Tietokantaesimerkki 2. - Repository pattern, Servicet
+## Dependency Injection ohjelmakirjaston ymmärtäminen
 
-Edellisessä esimerkissä tehtiin paljon pieniä asioita oikaisten, nyt korjataan nämä ja toteutetaan jotain pysyvämpää. Ensin kannattaa modelit jakaa omiin tiedostoihinsa.
+ASP.NET Core käyttää Microsoftin tekemää Dependency Injection -kirjastoa hallitsemaan eri osien riippuvuuksia. Tarkoituksena on kirjoittaa riippuvuudet Serviceinä, ja järjestelmä hoitaa näiden luomisen automaattisesti. Samaan tapaan kuin esim. Javassa Google Guice tai PHP:ssä Laravel Service container.
+
+Injektiolla voidaan helpottaa mm. testausta, ja mahdollistaa toteutuksen vaihtamisen suhteellisen helposti niissä osissa missä se on tarpeen.
+
+Riippuvuudet rekisteröidään seuraavalla kolmella tavalla **Startup.cs** tiedoston `ConfigureServices` metodissa:
+
+* `services.AddTransient` - Riippuvuudet jotka ovat elossa mahdollisimman lyhyen ajan, eli ne luodaan kullekkin kohteelle uudelleen.
+* `services.AddScoped` - Riippuvuus joka on elossa yhden HTTP kyselyn ajan. Scopeja voi luoda myös muitakin, mutta ASP.NET Coressa yleensä kyse on HTTP-kyselyn ajan elossa olevista olioista.
+* `services.AddSingleton` - Riippuvuus joka on elossa koko ohjelman suorituksen ajan.
+
+Kukin käsky ottaa sisäänsä rajapinnan tai luokan, sekä toteutusluokan. Esimerkkinä rekisteröidään rajapinnalle toteutusluokka:
+
+```cs
+services.AddTransient<IEmailSender, EmailSender>()
+```
+
+Eli rajapinta on esimerkiksi:
+
+```cs
+public interface IEmailSender {
+    Task<Email> SendEmailAsync(Email email);
+}
+```
+
+Sekä toteutukselle luokka, tässä esimerkissä ei lähetä sähköpostia vaan se pelkästään tallennetaan `Email` tietokantatauluun, vaikka toteutus lähettäisi sähköpostin se kannattaa myös tallentaa sähköpostitauluun jotta voi helpommin seurata lähetettyjä sähköposteja tai etsiä virheitä:
+
+```cs
+public class EmailSender : IEmailSender {
+    private readonly AppDbContext dbContext;
+
+    public EmailSender(AppDbContext dbContext)
+    {
+        this.dbContext = dbContext;
+    }
+
+    public async Task<Email> SendEmailAsync(Email email) {
+        // Tässä voisi lähettää sähköpostin oikeasti ...
+
+        dbContext.Email.Add(email);
+        await dbContext.SaveChangesAsync();
+        return email;
+    }
+}
+```
+
+Tämän jälkeen ei tarvitse viitata `EmailSender` luokkan vaan voi käyttää vain `IEmailSender` rajapintaa injektion kohteena.
+
+Rajapintaluokka ja toteutusluokka voivat olla samoja, erityisesti kun järjestelmää vasta kehtitetään on yleistä rekisteröidä vain toteutusluokka injektiolle ilman rajapintaa.
+
+Samalla tavalla toimivat `AddScoped` sekä `AddSingleton`, kullakin on myös useita overloadeja, esim. funktio joka palauttaa toteuttavan objektin.
+
+[Lisätietoja: Introduction to Dependency Injection in ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection)
+
+## Tietokantaesimerkki 2. - Repository pattern, Servicet, Datan validointi
+
+Edellisessä esimerkissä tehtiin paljon pieniä asioita oikaisten, nyt korjataan nämä ja toteutetaan jotain pysyvämpää. Pienemmissä ohjelmissa `AppDbContext` tietokantakäsittelijää voi kutsua kontrollerista suoraan, mutta SQL kyselyiden, ja business logiikan sekoittaminen kontrolleriin tekee asioista hyvin hankalaa isommissa ohjelmistoissa.
+
+Tarkoitus on jakaa ohjelmakoodi selkeisiin osiin haasteiden eriyttämisellä (separation of concerns), kontrollerit validoivat käyttäjän datan ja kutsuvat servicejä. Servicet käyttävät storeja. Storet tallentavat ja hakevat dataa tietokannasta.
+
+`Controller <-> Service <-> Store`
+
+Ennen tätä siistitään muutami asioita jotka jäivät tarkoituksella puoli tiehen edellisessä esimerkissä. Ensin kannattaa modelit jakaa omiin tiedostoihinsa.
+
+### SQL-asetukset appsettings.json tiedostoon
 
 Tietokannan asetukset kovakoodattiin ohjelmakoodiin, siirretään ne nyt konfigurointi tiedostoon, avaa **appsettings.Development.json**, syötä tietokannan asetus sinne näin:
 
@@ -624,13 +689,15 @@ Tietokannan asetukset kovakoodattiin ohjelmakoodiin, siirretään ne nyt konfigu
 }
 ```
 
-Nyt muokataan **Startup.cs** tiedostoa siten että edellisessä esimerkissä hardkoodattu yhteysosoite haetaan konfiguraatiotiedostota, avaa `ConfigureServices` metodi ja muokkaa se seuraavaksi:
+Nyt muokataan **Startup.cs** tiedostoa siten että edellisessä esimerkissä kovakoodattu yhteysosoite haetaan konfiguraatiotiedostota, avaa `ConfigureServices` metodi ja muokkaa se seuraavaksi:
 
 ```cs
 services.AddDbContext<AppDbContext>(o => {
     o.UseSqlite(Configuration.GetConnectionString("Database"));
 });
 ```
+
+### Testi datalle oma luokka
 
 Siirretään tietokannan luontia varten tehty `CreateTestData()` metodi omaan luokkaansa, luodaan ensin rajapinta `IInitDb` joka toimii perustana tietokannan alustamiselle käynnistyessä.
 
@@ -674,12 +741,37 @@ public class InitDbProduction : IInitDb
     public async Task Init()
     {
         // Voit ajaa erinäköisiä toimenpiteitä prosessin käynnistyksessä
-        // tässä kohti, joissain tilanteissa esim migraatioita tms.
+        // tässä kohti, joissain tilanteissa esim migraatioita, tarkistuksia tms.
+
+        // Huomattavaa on että ASP.NET Core prosesseja käynnistetään
+        // tarvittaessa ja niitä on usein elossa useita samaan aikaan eli
+        // toiminnot joita tuotannossa tässä kohti voi ajaa on hyvin
+        // rajattuja
     }
 }
 ```
 
-Nyt määrittellään toteutus `IInitDb` luokalle siitä riippuen kummassa tilassa ohjelma on käynnistetty. Lisätään **Startup.cs** tiedostoon poikkeus sen mukaan kummassa tilassa ohjelma on, muokkaa `ConfigureServices()` metodia:
+Voidakseen konditionaalisesti käyttää `InitDbProduction` tai `InitDbDevelopment` luokkaa täytyy ohjelman käynnistysympäristön tieto saada myös ConfigureServices metodissa, määritellään `IHostingEnvironment` argumentiksi `Startup` rakentajassa, eli muokataan rakentaja ensin seuraavanlaiseksi:
+
+```cs
+    public class Startup
+    {
+
+        public IConfiguration Configuration { get; }
+
+        public IHostingEnvironment Environment { get; }
+        
+        public Startup(IHostingEnvironment env, IConfiguration configuration)
+        {
+            Configuration = configuration;
+            Environment = env; // Ottaa environment tiedon paikalliseen muuttujaan
+        }
+
+        // ...
+    }
+```
+
+Määritellään toteutus `IInitDb` rajapinnalle siitä riippuen kummassa tilassa ohjelma on käynnistetty. Lisätään **Startup.cs** tiedostoon poikkeus sen mukaan kummassa tilassa ohjelma on, muokkaa `ConfigureServices()` metodia ja lisää rivit:
 
 ```cs
 if (Environment.IsProduction()) {
@@ -701,33 +793,100 @@ using (var scoped = app.ApplicationServices.CreateScope()) {
 Tämä hakee `IInitDb` luokan toteutuksen ja kutsuu sen `Init()` metodia.
 
 
+### Repository pattern (Stores)
+
+Tietokannan käsittely kannattaa siirtää omiin luokkiinsa, käytän tässä repository patternin kaltaista suunnittelumallia, luokat ovat nimetty esim. `InvoiceStore`, `BusinessStore`, `ClientStore`, store jälkiliitettä käytetään esimerkiksi Identity kirjaston luokissa.
+
+#### `InvoiceStore.cs`
+
+Tässä on esimerkkinä `InvoiceStore` joka tallentaa, lukee ja hakee ohjelman laskuja, voit katsoa muut Storet esimerkkikoodeista. En käytä tässä mitään yleistystä, perintää, tai koodin generointia CRUD toimintojen tekemiseksi. 
+
+```cs
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Esimerkki3.Tietokanta2.Db;
+using Esimerkki3.Tietokanta2.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace Esimerkki3.Tietokanta2.Stores {
+    public class InvoiceStore
+    {
+        private readonly AppDbContext dbContext;
+
+        public InvoiceStore(AppDbContext dbContext)
+        {
+            this.dbContext = dbContext;
+        }
+
+        public async Task Update(Invoice invoice) {
+            dbContext.Invoice.Update(invoice);
+            await dbContext.SaveChangesAsync();
+        }
+
+        public async Task<Invoice> Create(Invoice invoice) {
+            dbContext.Invoice.Add(invoice);
+            await dbContext.SaveChangesAsync();
+            return invoice;
+        }
+
+        public async Task<Invoice> Delete(Invoice invoice) {
+            dbContext.Invoice.Remove(invoice);
+            await dbContext.SaveChangesAsync();
+            return invoice;
+        }
+
+        public async Task<Invoice> Get(int id) {
+            var value = await dbContext.Invoice.FirstOrDefaultAsync(t => t.Id == id);
+            if (value == null) {
+                throw new NotFoundException();
+            }
+            return value;
+        }
+
+        public async Task<ICollection<Invoice>> ListLatestByBusiness(int businessId) {
+            return await dbContext.Invoice
+                .Where(t => t.BusinessId == businessId)
+                .Include(t => t.InvoiceRows) // Sisällytä kyselyyn laskurivien tiedot
+                .Include(t => t.Client) // Sisällytä kyselyyn asiakkaantiedot
+                .OrderBy(t => t.Created)
+                .ToListAsync();
+        }
+    }
+}
+```
+
+Huomaa että tässä käytetään listauksen näyttmisessä EF Coren `Include` metodia joka palauttaessaan rivin täyttää myös rivin viittaukset arvoilla. EF Coressa ei ole vielä viitteiden laiskaa latausta vaan ne pitää itse muistaa listata jos niitä tarvitsee.
+
+### Services layer
+
+Tarkoitus on luoda Servicet ja toiminnot kullekkin ilmeiselle käyttötapaukselle:
+
+* Yritykset rekisteröityvät
+    * `BusinessService.Register()`
+* Yritys lisää, poistaa ja muokkaa omia asiakkaitaan
+    * `ClientService.Create()`
+    * `ClientService.Delete()`
+    * `ClientService.Update()`
+    * `ClientService.List()`
+* Yrityksen pitää pystyä listaamaan, näyttämään, lisäämään, tuhoamaan, muokkaamaan, ja lähettämään laskujaan
+    * `InvoiceService.Create()`
+    * `InvoiceService.Delete()`
+    * `InvoiceService.Update()`
+    * `InvoiceService.Send()`
+    * `InvoiceService.Get()`
+    * `InvoiceService.ListLatest()`
+* Järjestelmän pitää pystyä lähettämään ilmoituksia
+    * `NotificationService.SendRegisterBusiness()` - yrityksen rekisteröitymissähköposti
+    * `NotificationService.SendForgotPassword()` - unohditko salasanasi
+    
+#### `InvoiceServices.cs`
+
+Luodaan Servicet kullekkin 
+
 ## MVC pääkirjasto
 
 Middlewaret, Filtterit
-
-## Dependency Injection ohjelmakirjaston ymmärtäminen
-
-ASP.NET Core käyttää Microsoftin tekemää Dependency Injection -kirjastoa hallitsemaan eri osien riippuvuuksia. Tarkoituksena on kirjoittaa riippuvuudet Serviceinä, ja järjestelmä hoitaa näiden luomisen automaattisesti. Samaan tapaan kuin esim. Javassa Google Guice tai PHP:ssä Laravel Service container.
-
-Injektiolla voidaan helpottaa mm. testausta, ja mahdollistaa toteutuksen vaihtamisen suhteellisen helposti niissä osissa missä se on tarpeen.
-
-Riippuvuudet rekisteröidään seuraavalla kolmella tavalla **Startup.cs** tiedoston `ConfigureServices` metodissa:
-
-* `services.AddTransient` - Riippuvuudet jotka ovat elossa mahdollisimman lyhyen ajan, eli ne luodaan kullekkin kohteelle uudelleen.
-* `services.AddScoped` - Riippuvuus joka on elossa yhden HTTP kyselyn ajan. Scopeja voi luoda myös muitakin, mutta ASP.NET Coressa yleensä kyse on HTTP-kyselyn ajan elossa olevista olioista.
-* `services.AddSingleton` - Riippuvuus joka on elossa koko ohjelman suorituksen ajan.
-
-Kukin käsky ottaa sisäänsä rajapintaluokan tai interfacen, sekä toteutusluokan. Esimerkkinä rekisteröidään interfacelle toteutusluokka:
-
-```cs
-services.AddTransient<IEmailSender, EmailSender>()
-```
-
-Rajapintaluokka ja toteutusluokka voivat olla samoja, erityisesti kun järjestelmää vasta kehtitetään on yleistä luoda vain toteutusluokka ilman interfacea.
-
-Samalla tavalla toimivat `AddScoped` sekä `AddSingleton`, kullakin on myös useita overloadeja, esim. funktio joka palauttaa toteuttavan objektin.
-
-[Lisätietoja: Introduction to Dependency Injection in ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection)
 
 ## Identity Core käyttäjä- ja roolienhallintakirjasto
 

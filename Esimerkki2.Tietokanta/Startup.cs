@@ -92,7 +92,7 @@ namespace Esimerkki2.Tietokanta
             var clients = new List<Client>() {
                 new Client() {
                     Business = acmeBusiness,
-                    Title = "Kukkaismyynti Oy",
+                    Name = "Kukkaismyynti Oy",
                     Address = "Kukkaiskuja 3",
                     City = "Jyväskylä",
                     PostCode = "40100",
@@ -101,7 +101,7 @@ namespace Esimerkki2.Tietokanta
                 },
                 new Client() {
                     Business = acmeBusiness,
-                    Title = "Kynäkauppiaat Ry",
+                    Name = "Kynäkauppiaat Ry",
                     Address = "Kynäkatu 123",
                     City = "Helsinki",
                     PostCode = "00100",

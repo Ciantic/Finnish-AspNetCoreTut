@@ -42,7 +42,7 @@ namespace Esimerkki3.Tietokanta2.Db
             var clients = new List<Client>() {
                 new Client() {
                     Business = acmeBusiness,
-                    Title = "Kukkaismyynti Oy",
+                    Name = "Kukkaismyynti Oy",
                     Address = "Kukkaiskuja 3",
                     City = "Jyväskylä",
                     PostCode = "40100",
@@ -51,7 +51,7 @@ namespace Esimerkki3.Tietokanta2.Db
                 },
                 new Client() {
                     Business = acmeBusiness,
-                    Title = "Kynäkauppiaat Ry",
+                    Name = "Kynäkauppiaat Ry",
                     Address = "Kynäkatu 123",
                     City = "Helsinki",
                     PostCode = "00100",
@@ -246,7 +246,7 @@ namespace Esimerkki3.Tietokanta2.Db
                 Address = address.Address,
                 PostCode = address.PostCode,
                 City = address.City,
-                Title = name.FirstName + " " + name.LastName,
+                Name = name.FirstName + " " + name.LastName,
                 Email = name.Email,
                 PhoneNumber = GeneratePhoneNumber(),
             };
