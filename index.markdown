@@ -830,14 +830,14 @@ namespace Esimerkki3.Tietokanta2.Stores {
             return invoice;
         }
 
-        public async Task<Invoice> Delete(Invoice invoice) {
+        public async Task Remove(Invoice invoice) {
             dbContext.Invoice.Remove(invoice);
             await dbContext.SaveChangesAsync();
-            return invoice;
         }
 
-        public async Task<Invoice> Get(int id) {
-            var value = await dbContext.Invoice.FirstOrDefaultAsync(t => t.Id == id);
+        public async Task<Invoice> GetByBusiness(int businessId, int id) {
+            var value = await dbContext.Invoice
+                .FirstOrDefaultAsync(t => t.Id == id && t.BusinessId == businessId);
             if (value == null) {
                 throw new NotFoundException();
             }
@@ -856,33 +856,44 @@ namespace Esimerkki3.Tietokanta2.Stores {
 }
 ```
 
-Huomaa että tässä käytetään listauksen näyttmisessä EF Coren `Include` metodia joka palauttaessaan rivin täyttää myös rivin viittaukset arvoilla. EF Coressa ei ole vielä viitteiden laiskaa latausta vaan ne pitää itse muistaa listata jos niitä tarvitsee.
+Lstauksen näyttmisessä käytetään EF Coren `Include` metodia joka palauttaessaan rivin täyttää myös rivin viittaukset arvoilla. EF Coressa ei ole vielä viitteiden laiskaa latausta vaan ne pitää itse muistaa listata jos niitä tarvitsee.
 
 ### Services layer
 
-Tarkoitus on luoda Servicet ja toiminnot kullekkin ilmeiselle käyttötapaukselle:
+Tarkoitus on luoda palvelut ja toiminnot kullekkin ilmeiselle käyttötapaukselle:
 
 * Yritykset rekisteröityvät
     * `BusinessService.Register()`
 * Yritys lisää, poistaa ja muokkaa omia asiakkaitaan
     * `ClientService.Create()`
-    * `ClientService.Delete()`
+    * `ClientService.Remove()`
     * `ClientService.Update()`
-    * `ClientService.List()`
+    * `ClientService.ListByBusiness()`
 * Yrityksen pitää pystyä listaamaan, näyttämään, lisäämään, tuhoamaan, muokkaamaan, ja lähettämään laskujaan
     * `InvoiceService.Create()`
-    * `InvoiceService.Delete()`
+    * `InvoiceService.Remove()`
     * `InvoiceService.Update()`
     * `InvoiceService.Send()`
-    * `InvoiceService.Get()`
-    * `InvoiceService.ListLatest()`
+    * `InvoiceService.GetByBusiness()`
+    * `InvoiceService.ListLatestByBusiness()`
+* Käyttäjän pitää pystyä muuttamaan ja resetoimaan salasana
+    * `AccountService.ChangePassword()` vaihtaa salasanan omasta toimesta
+    * `AccountService.ForgotPassword()` lähettää resetointi osoitteen sähköpostiin
+    * `AccountService.ResetPassword()` ottaa salasana resetoinnin tokenin ja vaihtaa salasanan
 * Järjestelmän pitää pystyä lähettämään ilmoituksia
-    * `NotificationService.SendRegisterBusiness()` - yrityksen rekisteröitymissähköposti
-    * `NotificationService.SendForgotPassword()` - unohditko salasanasi
-    
-#### `InvoiceServices.cs`
+    * `NotificationSender.SendBusinessRegistered()` - yrityksen rekisteröitymissähköposti
+    * `NotificationSender.SendForgotPassword()` - unohditko salasanasi? resetointilinkki
+    * `NotificationSender.SendInvoice()` - lähetä lasku
 
-Luodaan Servicet kullekkin 
+Huomaa että esimerkiksi `InvoiceService` ja sen rajapinta saattaa näyttää hyvin samalta mitä `InvoiceStore` mutta ne ovat eri tasoilla, ja toteuttavat eri asiaa ohjelmassa. Vaikka tässä esimerkissä `InvoiceService` on hyvin tyhmä ja kutsuu melkein suoraan storea, niin yleensä ohjelmiston kasvaessa palvelutasolla olevat luokat tekevät paljon enemmän.
+
+Nimesin 
+
+ASP.NET Coressa käyttäjien oikeustarkistus alkaa kontrolleritasolta joten palvelutasolla ei ole erikseen oikeustarkistusta toiminnoissa. Oikeustarkistus ja kirjautumisjärjestelmän integrointi käsitellään vasta seuraavassa esimerkissä.
+
+#### `AccountService` esimerkkinä
+
+
 
 ## MVC pääkirjasto
 

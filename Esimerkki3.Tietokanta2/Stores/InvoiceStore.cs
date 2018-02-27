@@ -26,14 +26,14 @@ namespace Esimerkki3.Tietokanta2.Stores {
             return invoice;
         }
 
-        public async Task<Invoice> Remove(Invoice invoice) {
+        public async Task Remove(Invoice invoice) {
             dbContext.Invoice.Remove(invoice);
             await dbContext.SaveChangesAsync();
-            return invoice;
         }
 
-        public async Task<Invoice> Get(int id) {
-            var value = await dbContext.Invoice.FirstOrDefaultAsync(t => t.Id == id);
+        public async Task<Invoice> GetByBusiness(int businessId, int id) {
+            var value = await dbContext.Invoice
+                .FirstOrDefaultAsync(t => t.Id == id && t.BusinessId == businessId);
             if (value == null) {
                 throw new NotFoundException();
             }

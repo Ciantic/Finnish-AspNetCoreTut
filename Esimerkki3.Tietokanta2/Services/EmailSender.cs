@@ -13,7 +13,10 @@ namespace Esimerkki3.Tietokanta2.Services {
         }
 
         public async Task<Email> SendEmailAsync(Email email) {
-            // Tässä voisi lähettää sähköpostin oikeasti ...
+            // Tässä voisi lähettää sähköpostin oikeasti ... tai sitten sen voi
+            // laittaa tietokantatauluun ja antaa toisen prosessin purkaa sitä
+            // sähköpostijonoa taulussa jolloin hetkelliset yhteysvirheet tms.
+            // ei hidasta tämän palvelimen toimintaa
             
             return await emailStore.Create(email);
         }

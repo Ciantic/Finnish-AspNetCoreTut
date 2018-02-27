@@ -32,8 +32,9 @@ namespace Esimerkki3.Tietokanta2.Stores {
             return Client;
         }
 
-        public async Task<Client> Get(int id) {
-            var value = await dbContext.Client.FirstOrDefaultAsync(t => t.Id == id);
+        public async Task<Client> GetByBusiness(int businessId, int id) {
+            var value = await dbContext.Client
+                .FirstOrDefaultAsync(t => t.Id == id && t.BusinessId == businessId);
             if (value == null) {
                 throw new NotFoundException();
             }
