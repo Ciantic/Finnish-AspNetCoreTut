@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace Esimerkki3.Tietokanta2.Stores {
         }
 
         public async Task<Email> Create(Email email) {
+            email.Created = DateTime.UtcNow;
             dbContext.Email.Add(email);
             await dbContext.SaveChangesAsync();
             return email;

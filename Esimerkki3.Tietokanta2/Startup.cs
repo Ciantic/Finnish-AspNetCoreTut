@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Esimerkki3.Tietokanta2.Db;
 using Esimerkki3.Tietokanta2.Models;
+using Esimerkki3.Tietokanta2.Services;
+using Esimerkki3.Tietokanta2.Stores;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -42,6 +44,20 @@ namespace Esimerkki3.Tietokanta2
             services.AddDbContext<AppDbContext>(o => {
                 o.UseSqlite(Configuration.GetConnectionString("Database"));
             });
+
+            // Services
+            services.AddTransient<AccountService, AccountService>();
+            services.AddTransient<BusinessService, BusinessService>();
+            services.AddTransient<ClientService, ClientService>();
+            services.AddTransient<IEmailSender, EmailSender>();
+            services.AddTransient<InvoiceService, InvoiceService>();
+            services.AddTransient<NotificationSender, NotificationSender>();
+
+            // Stores
+            services.AddTransient<BusinessStore, BusinessStore>();
+            services.AddTransient<ClientStore, ClientStore>();
+            services.AddTransient<EmailStore, EmailStore>();
+            services.AddTransient<InvoiceStore, InvoiceStore>();
 
             if (Environment.IsProduction()) {
                 services.AddTransient<IInitDb, InitDbProduction>();

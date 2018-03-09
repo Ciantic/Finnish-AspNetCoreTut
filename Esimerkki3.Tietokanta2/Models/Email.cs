@@ -1,3 +1,5 @@
+using System;
+
 namespace Esimerkki3.Tietokanta2.Models
 {
 
@@ -8,5 +10,7 @@ namespace Esimerkki3.Tietokanta2.Models
         public string From { get; set; }
         public string Subject { get; set; }
         public string Body { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime? Sent { get; set; }
     }
 }

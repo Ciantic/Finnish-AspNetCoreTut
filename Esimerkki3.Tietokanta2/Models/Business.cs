@@ -1,3 +1,5 @@
+using System;
+
 namespace Esimerkki3.Tietokanta2.Models
 {
     public class Business
@@ -8,5 +10,7 @@ namespace Esimerkki3.Tietokanta2.Models
         // Suora viittaus
         public int OwnerApplicationUserId { get; set; }
         public ApplicationUser OwnerApplicationUser { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime Modified { get; set; }
     }
 }

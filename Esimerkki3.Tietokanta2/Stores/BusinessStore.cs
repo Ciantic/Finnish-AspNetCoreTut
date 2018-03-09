@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Esimerkki3.Tietokanta2.Db;
@@ -15,11 +16,13 @@ namespace Esimerkki3.Tietokanta2.Stores {
         }
 
         public async Task Update(Business business) {
+            business.Modified = DateTime.UtcNow;
             dbContext.Business.Update(business);
             await dbContext.SaveChangesAsync();
         }
 
         public async Task<Business> Create(Business business) {
+            business.Created = DateTime.UtcNow;
             dbContext.Business.Add(business);
             await dbContext.SaveChangesAsync();
             return business;

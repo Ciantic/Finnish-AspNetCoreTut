@@ -1,3 +1,5 @@
+using System;
+
 namespace Esimerkki3.Tietokanta2.Models
 {
     public class Client
@@ -13,5 +15,7 @@ namespace Esimerkki3.Tietokanta2.Models
         // Suora viittaus
         public int BusinessId { get; set; }
         public Business Business { get; set; }
+        public DateTime Created { get; set; }
+        public DateTime Modified { get; set; }
     }
 }

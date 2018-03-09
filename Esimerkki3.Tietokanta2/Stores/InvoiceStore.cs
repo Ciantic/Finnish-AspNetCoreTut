@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,11 +17,14 @@ namespace Esimerkki3.Tietokanta2.Stores {
         }
 
         public async Task Update(Invoice invoice) {
+            invoice.Modified = DateTime.UtcNow;
             dbContext.Invoice.Update(invoice);
             await dbContext.SaveChangesAsync();
         }
 
         public async Task<Invoice> Create(Invoice invoice) {
+            invoice.Created = DateTime.UtcNow;
+            invoice.Modified = DateTime.UtcNow;
             dbContext.Invoice.Add(invoice);
             await dbContext.SaveChangesAsync();
             return invoice;

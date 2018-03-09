@@ -96,9 +96,9 @@ ASP.NET Core 2:ssa kaikki riippuvuudet ovat metapaketissa `Microsoft.AspNetCore.
 
 ### dotnet watch
 
-Tarkoituksena on kääntää ja käynnistää ohjelma automaattisesti uudestaan kun ohjelmakoodia muokataan, tämä nopeuttaa työtäsi kun muokkaat ohjelmaa.
+Vielä julkaisemattomassa ASP.NET Core 2.1.4 tämä työkalu tulee valmiiksi mukana joten sitä ei tarvitse asentaa erikseen. Tämän työkalun tarkoituksena on kääntää ja käynnistää ohjelma automaattisesti uudestaan kun ohjelmakoodia muokataan, tämä nopeuttaa työtäsi kun muokkaat ohjelmaa.
 
-Projektitiedostoon (csproj) pitää lisätä `watch` työkalun asentamista varten yksi xml elementti:
+Asentamista varten projektitiedostoon (csproj) pitää lisätä yksi xml elementti:
 
 ```xml
 <ItemGroup>
@@ -290,7 +290,7 @@ Tietokantamallini on seuraava:
 * InvoiceRow on laskurivi
 * Email on taulu sähköposteja varten
 
-### Models/Models.cs tietokannan taulujen määrittely
+### Models/Models.cs - tietokannan taulujen määrittely
 
 ```cs
 using System;
@@ -398,7 +398,7 @@ namespace Esimerkki2.Tietokanta.Models
 
 Tietokantamalli luodaan siis tekemällä normaaleja luokkia, EF Core luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja auto increment, viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään, näistä tulee `foreign key`. Konventioihin voi vaikutaa `DbContext` luokalla.
 
-### AppDbContext.cs tietokannan käsittelyluokka
+### AppDbContext.cs - tietokannan käsittelyluokka
 
 Tietokannan käsittelyä ja yhdistämistä varten tarvitaan `DbContext` luokasta periytyvä luokka jossa määrätään taulut ja mahdolliset lisäasetukset kullekkin taululle, esim erikoiset avaimet tms.
 
@@ -434,7 +434,7 @@ namespace Esimerkki2.Tietokanta.Db
 }
 ```
 
-### Startup.cs tietokantaan yhdistäminen ja testidata
+### Startup.cs - tietokantaan yhdistäminen ja testidata
 
 Seuraavaksi määritellään tietokanta johon yhdistetään, tässä käytetään SQLiteä esimerkkinä. Tarkoitus on rekisteröidä `AppDbContext` mm. riippuvuusinjektiota varten, lisää `ConfigureServices()` metodiin seuraavat rivit:
 
@@ -795,13 +795,23 @@ Tämä hakee `IInitDb` luokan toteutuksen ja kutsuu sen `Init()` metodia.
 
 ### Repository pattern (Stores)
 
-Tietokannan käsittely kannattaa siirtää omiin luokkiinsa, käytän tässä repository patternin kaltaista suunnittelumallia, luokat ovat nimetty esim. `InvoiceStore`, `BusinessStore`, `ClientStore`, store jälkiliitettä käytetään esimerkiksi Identity kirjaston luokissa.
+Tietokannan käsittely kannattaa siirtää omiin luokkiinsa, käytän tässä repository patternin kaltaista suunnittelumallia, store jälkiliitettä käytetään esimerkiksi Identity kirjaston luokissa. Luokat ovat seuraavat:
 
-#### `InvoiceStore.cs`
+* `InvoiceStore` - laskut
+* `BusinessStore` - yritykset
+* `ClientStore` - asiakkaat
+* `EmailStore` - sähköpostit
 
-Tässä on esimerkkinä `InvoiceStore` joka tallentaa, lukee ja hakee ohjelman laskuja, voit katsoa muut Storet esimerkkikoodeista. En käytä tässä mitään yleistystä, perintää, tai koodin generointia CRUD toimintojen tekemiseksi. 
+Kussakin luokassa on kaikki tietokantaan tehtävät kyselyt, monesti tänne voi tulla kummallisia ja pitkästi nimettyjä metodeja, mutta se ei haittaa. Tarkoituksenani on tehdä metodit siten että SQL-kysely tapahtuu aina Storejen sisällä eli palautusarvot ovat konkreettisia, toinen vaihtoehtoinen tapa olisi palauttaa `IQueryable` jota voi vielä muokata.
+
+Tämä suunnittelumalli ei ole sopiva jos halutaan tietotaulujen (DataGrid) kaltaista rakennetta, tai muuten hyvin dynaamisia kyselyitä esim. hakuja varten. GraphQL on mahdollisesti parempi rajapinta jos tietoa tarvii kysellä useassa muodossa, mutta sille olevat kirjastot eivät ole vielä tarpeeksi kehittyneitä C#/.NET ympäristössä.
+
+#### `InvoiceStore.cs` esimerkkinä
+
+Tämä store tallentaa, lukee ja hakee ohjelman laskuja, voit katsoa muut Storet esimerkkikoodeista. En käytä tässä mitään yleistystä, perintää, tai koodin generointia CRUD toimintojen tekemiseksi. 
 
 ```cs
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -820,11 +830,14 @@ namespace Esimerkki3.Tietokanta2.Stores {
         }
 
         public async Task Update(Invoice invoice) {
+            invoice.Modified = DateTime.UtcNow;
             dbContext.Invoice.Update(invoice);
             await dbContext.SaveChangesAsync();
         }
 
         public async Task<Invoice> Create(Invoice invoice) {
+            invoice.Created = DateTime.UtcNow;
+            invoice.Modified = DateTime.UtcNow;
             dbContext.Invoice.Add(invoice);
             await dbContext.SaveChangesAsync();
             return invoice;
@@ -885,13 +898,92 @@ Tarkoitus on luoda palvelut ja toiminnot kullekkin ilmeiselle käyttötapauksell
     * `NotificationSender.SendForgotPassword()` - unohditko salasanasi? resetointilinkki
     * `NotificationSender.SendInvoice()` - lähetä lasku
 
-Huomaa että esimerkiksi `InvoiceService` ja sen rajapinta saattaa näyttää hyvin samalta mitä `InvoiceStore` mutta ne ovat eri tasoilla, ja toteuttavat eri asiaa ohjelmassa. Vaikka tässä esimerkissä `InvoiceService` on hyvin tyhmä ja kutsuu melkein suoraan storea, niin yleensä ohjelmiston kasvaessa palvelutasolla olevat luokat tekevät paljon enemmän.
-
-Nimesin 
+Huomaa että esimerkiksi `InvoiceService` ja sen rajapinta saattaa näyttää hyvin samalta mitä `InvoiceStore` mutta ne ovat eri tasoilla, ja toteuttavat eri asiaa ohjelmassa. Vaikka tässä esimerkissä `InvoiceService` on hyvin tyhmä ja kutsuu melkein suoraan storea, niin yleensä ohjelmiston kasvaessa palvelutasolla olevat luokat tekevät paljon enemmän. 
 
 ASP.NET Coressa käyttäjien oikeustarkistus alkaa kontrolleritasolta joten palvelutasolla ei ole erikseen oikeustarkistusta toiminnoissa. Oikeustarkistus ja kirjautumisjärjestelmän integrointi käsitellään vasta seuraavassa esimerkissä.
 
-#### `AccountService` esimerkkinä
+#### `InvoiceService` esimerkkinä
+
+```cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Esimerkki3.Tietokanta2.Db;
+using Esimerkki3.Tietokanta2.Models;
+using Esimerkki3.Tietokanta2.Stores;
+using Microsoft.EntityFrameworkCore;
+
+namespace Esimerkki3.Tietokanta2.Services {
+    public class InvoiceService
+    {
+        private readonly InvoiceStore invoiceStore;
+        private readonly NotificationSender notificationSender;
+
+        public InvoiceService(InvoiceStore invoiceStore, NotificationSender notificationSender)
+        {
+            this.invoiceStore = invoiceStore;
+            this.notificationSender = notificationSender;
+        }
+
+        public async Task Update(Invoice invoice) {
+            await invoiceStore.Update(invoice);
+        }
+
+        public async Task<Invoice> Create(Invoice invoice) {
+            return await invoiceStore.Create(invoice);
+        }
+
+        public async Task Remove(Invoice invoice) {
+            await invoiceStore.Remove(invoice);
+        }
+
+        public async Task<Invoice> Send(Invoice invoice) {
+            invoice.Sent = DateTime.UtcNow;
+            await invoiceStore.Update(invoice);
+            await notificationSender.SendInvoice(invoice);
+            return invoice;
+        }
+
+        public async Task<Invoice> GetByBusiness(int businessId, int id) {
+            return await invoiceStore.GetByBusiness(businessId, id);
+        }
+
+        public async Task<ICollection<Invoice>> ListLatestByBusiness(int businessId) {
+            return await invoiceStore.ListLatestByBusiness(businessId);
+        }
+    }
+}
+```
+
+### Service ja Storen rekisteröinti
+
+Servicet ja Storet täytyy rekisteröidä Dependency Injection kirjastolle, tämä tapahtuu muokkaamalla **Startup.cs** tiedostoa ja lisäämällä ne `ConfigureServices()` metodiin:
+
+```cs
+// Services
+services.AddTransient<AccountService, AccountService>();
+services.AddTransient<BusinessService, BusinessService>();
+services.AddTransient<ClientService, ClientService>();
+services.AddTransient<IEmailSender, EmailSender>();
+services.AddTransient<InvoiceService, InvoiceService>();
+services.AddTransient<NotificationSender, NotificationSender>();
+
+// Stores
+services.AddTransient<BusinessStore, BusinessStore>();
+services.AddTransient<ClientStore, ClientStore>();
+services.AddTransient<EmailStore, EmailStore>();
+services.AddTransient<InvoiceStore, InvoiceStore>();
+```
+
+Tässä esimerkissä kaikki Servicet ovat transientteja, eli ne luodaan jokaiselle vaatimukselle uudestaan.
+
+
+### Controllers ja Dto luokat
+
+Koska malliolioita ei saa päästää rajapinnalle, niitä varten luodaan Dto (Data Transfer Object) luokat, näitä vastaisi näkymämallit (ViewModel) näkymäpohjaisessa sovelluksessa. Dto:n luominen voi vaikuttaa ensialkuun kovin työläiltä, koska niissä on hyvin paljon samoja kenttiä kuin malliluokissa.
+
+Dto luokat täytyy myös pystyä muuttamaan takaisin malleiksi, ja malleista takaisin Dto luokiksi. Tätä varten voi käyttää [AutoMapper](http://automapper.org/) kirjastoa, mutta tässä esimerkissä en käytä mitään kirjastoa vaan kirjotan vastineet käsin.
 
 
 

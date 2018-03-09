@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,21 +16,23 @@ namespace Esimerkki3.Tietokanta2.Stores {
             this.dbContext = dbContext;
         }
 
-        public async Task Update(Client Client) {
-            dbContext.Client.Update(Client);
+        public async Task Update(Client client) {
+            client.Modified = DateTime.UtcNow;
+            dbContext.Client.Update(client);
             await dbContext.SaveChangesAsync();
         }
 
-        public async Task<Client> Create(Client Client) {
-            dbContext.Client.Add(Client);
+        public async Task<Client> Create(Client client) {
+            client.Created = DateTime.UtcNow;
+            dbContext.Client.Add(client);
             await dbContext.SaveChangesAsync();
-            return Client;
+            return client;
         }
 
-        public async Task<Client> Remove(Client Client) {
-            dbContext.Client.Remove(Client);
+        public async Task<Client> Remove(Client client) {
+            dbContext.Client.Remove(client);
             await dbContext.SaveChangesAsync();
-            return Client;
+            return client;
         }
 
         public async Task<Client> GetByBusiness(int businessId, int id) {
