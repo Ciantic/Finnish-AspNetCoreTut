@@ -5,14 +5,14 @@ using Esimerkki3.Tietokanta2.Models;
 namespace Esimerkki3.Tietokanta2.Controllers.Dtos
 {
     public class InvoiceRowDto {
-        public int Id { get; set; }
+        public int? Id { get; set; }
         
         [MinLength(3)]
         public string Name { get; set; }
         public int Quantity { get; set; }
         public Decimal Amount { get; set; }
 
-        public static InvoiceRowDto FromInvoiceRow(Invoice invoice, InvoiceRow invoiceRow) {
+        public static InvoiceRowDto FromInvoiceRow(InvoiceRow invoiceRow) {
             return new InvoiceRowDto() {
                 Id = invoiceRow.Id,
                 Name = invoiceRow.Name,
@@ -23,7 +23,7 @@ namespace Esimerkki3.Tietokanta2.Controllers.Dtos
 
         public InvoiceRow ToInvoiceRow(Invoice invoice) {
             return new InvoiceRow() {
-                Id = Id,
+                Id = Id ?? 0,
                 Name = Name,
                 Quantity = Quantity,
                 Amount = Amount,

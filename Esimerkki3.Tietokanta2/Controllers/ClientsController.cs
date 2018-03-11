@@ -11,24 +11,22 @@ namespace Esimerkki3.Tietokanta2.Controllers
 {
     // Tämä määrittelee alkuosaksi "api/values"
     [Route("[controller]")]
-    public class InvoicesController
+    public class ClientsController
     {
-        private readonly InvoiceService invoiceService;
         private readonly ClientService clientService;
 
-        public InvoicesController(InvoiceService invoiceService, ClientService clientService)
+        public ClientsController(ClientService clientService)
         {
-            this.invoiceService = invoiceService;
             this.clientService = clientService;
         }
 
         [HttpGet("{id}")] 
-        public async Task<InvoiceDto> Get(int id) {
+        public async Task<ClientDto> Get(int id) {
             // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
             // haetaan käyttäjän tiedoista
             var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, id);
-            return InvoiceDto.FromInvoice(invoice);
+            var client = await clientService.GetByBusiness(businessId, id);
+            return ClientDto.FromClient(client);
         }
 
         [HttpDelete("{id}")]
@@ -36,31 +34,28 @@ namespace Esimerkki3.Tietokanta2.Controllers
             // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
             // haetaan käyttäjän tiedoista
             var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, id);
-            await invoiceService.Remove(invoice);
+            var client = await clientService.GetByBusiness(businessId, id);
+            await clientService.Remove(client);
             return true;
         }
 
         [HttpPut("{id}")]
-        public async Task<InvoiceDto> Update(int id, [FromBody] InvoiceDto invoiceDto) {
+        public async Task<ClientDto> Update(int id, [FromBody] ClientDto clientDto) {
             // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
             // haetaan käyttäjän tiedoista
             var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, invoiceDto.Id);
-
-            // Tästä puuttuu oikeustarkistus että client Id on tämän yrityksen
-            // asiakkaan ID. Oikeustarkistukset tehdään seuraavassa esimerkissä
+            var client = await clientService.GetByBusiness(businessId, clientDto.Id);
 
             // Päivitä laskua dtosta
-            invoiceDto.UpdateInvoice(invoice);
-            await invoiceService.Update(invoice);
+            clientDto.UpdateClient(client);
+            await clientService.Update(client);
 
             // Palauta päivitetty lasku
-            return InvoiceDto.FromInvoice(invoice);
+            return ClientDto.FromClient(client);
         }
 
         [HttpPost]
-        public async Task<InvoiceDto> Create() {
+        public async Task<ClientDto> Create() {
             // Huomaa että tässä esimerkissä en ota sisään dataa josta lasku
             // luotaisiin, sillä haluan että tätä järjestelmää käytettäessä
             // luodaan aina ensin luonnos, eli tyhjä lasku jota aletaan
@@ -70,30 +65,20 @@ namespace Esimerkki3.Tietokanta2.Controllers
             // haetaan käyttäjän tiedoista
             var businessId = 1;
 
-            var invoice = await invoiceService.Create(new Invoice() {
+            var client = await clientService.Create(new Client() {
                 BusinessId = businessId
             });
-            return InvoiceDto.FromInvoice(invoice);
+            return ClientDto.FromClient(client);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<InvoiceDto>> ListLatest() {
+        public async Task<IEnumerable<ClientDto>> List() {
             // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
             // haetaan käyttäjän tiedoista
             var businessId = 1;
-            return (await invoiceService.ListLatestByBusiness(businessId))
-                .Select(t => InvoiceDto.FromInvoice(t))
+            return (await clientService.ListByBusiness(businessId))
+                .Select(t => ClientDto.FromClient(t))
                 .ToList();
-        }
-
-        [HttpPost("[action]/{id}")]
-        public async Task<InvoiceDto> Send(int id) {
-            // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
-            // haetaan käyttäjän tiedoista
-            var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, id);
-            var sentInvoice = await invoiceService.Send(invoice);
-            return InvoiceDto.FromInvoice(sentInvoice);
         }
     }
 }

@@ -29,19 +29,5 @@ namespace Esimerkki2.Tietokanta.Controllers
                 .Include(t => t.InvoiceRows)
                 .FirstOrDefaultAsync();
         }
-
-        public class InvoiceCreateDto {
-            // Täällä määritellään kentät jota API:n kautta saa luoda
-        }
-
-        [HttpPost] 
-        public async Task<bool> Create([FromBody] InvoiceCreateDto invoiceCreateDto)
-        {   
-            // Tänne voisi toteuttaa laskun luonnin
-            // ... 
-            // dbContext.Invoice.Add(invoice);
-            // await dbContext.SaveChangesAsync();
-            return true;
-        }
     }
 }

@@ -8,12 +8,13 @@ namespace Esimerkki3.Tietokanta2.Controllers.Dtos
 {
     public class InvoiceDto {
         public int Id { get; set; }
-        public string Title { get; set; }
+
+        [MinLength(3)]
+        public string Title { get; set; } = "";
         public DateTime? Sent { get; set; }
 
-        [Required]
         public ClientDto Client { get; set; }
-        public IList<InvoiceRowDto> InvoiceRows { get; set; }
+        public IList<InvoiceRowDto> InvoiceRows { get; set; } = new List<InvoiceRowDto>();
         public DateTime Created { get; set; }
         public DateTime Modified { get; set; }
 
@@ -23,16 +24,22 @@ namespace Esimerkki3.Tietokanta2.Controllers.Dtos
                 Id = invoice.Id,
                 Title = invoice.Title,
                 Sent = invoice.Sent,
+                Client = ClientDto.FromClient(invoice.Client),
                 Created = invoice.Created,
-                Modified = invoice.Modified
+                Modified = invoice.Modified,
+                InvoiceRows = invoice.InvoiceRows
+                    .Select(t => InvoiceRowDto.FromInvoiceRow(t))
+                    .ToList()
             };
         }
 
-        public Invoice ToInvoice(Invoice invoice) {
+        public Invoice UpdateInvoice(Invoice invoice) {
             invoice.Title = Title;
-            invoice.ClientId = Client.Id;
+            invoice.ClientId = Client?.Id;
             invoice.Client = null; // Vain ID:tä vaihdetaan päivittäessä
-            invoice.InvoiceRows = InvoiceRows.Select(t => t.ToInvoiceRow(invoice)).ToList();
+            invoice.InvoiceRows = InvoiceRows
+                .Select(t => t.ToInvoiceRow(invoice))
+                .ToList();
             return invoice;
         }
     }

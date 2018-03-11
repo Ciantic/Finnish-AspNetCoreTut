@@ -6,7 +6,7 @@ namespace Esimerkki3.Tietokanta2.Models
     public class Invoice
     {
         public int Id { get; set; }
-        public string Title { get; set; }
+        public string Title { get; set; } = "";
 
         // Sent on oikeasti huono idea laskutusohjelmalle, lähetetty lasku pitäisi
         // viedä esim. uuteen tauluun ja arvot jäädyttää, mutta tämä on esimerkki
@@ -22,7 +22,7 @@ namespace Esimerkki3.Tietokanta2.Models
 
         // Väärinpäin oleva navigointi (Inverse navigation), viittaa tämän
         // laskun InvoiceRow listaan
-        public IList<InvoiceRow> InvoiceRows { get; set; }
+        public IList<InvoiceRow> InvoiceRows { get; set; } = new List<InvoiceRow>();
 
         public DateTime Created { get; set; }
         public DateTime Modified { get; set; }

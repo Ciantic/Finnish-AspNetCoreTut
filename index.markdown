@@ -459,7 +459,7 @@ using (var scoped = app.ApplicationServices.CreateScope()) {
 }
 ```
 
-Sekä oma metodi tietokannan luomista varten, tässä käsketään ohjelmaa luomaan tietokanta aina uudestaan, lisäksi tässä luodaan testidataa:
+Luodaan nyt myös testidataa ja tietokanta, tässä esimerkissä tietokanta luodaan joka käynnistyksellä uudestaan:
 
 ```cs
 
@@ -530,9 +530,9 @@ private async Task CreateTestData(AppDbContext appDbContext) {
 
 Yllä luodaan siis olioita ja ne lisätään AppDbContextiin jonka jälkeen se tallennetaan tietokantaan. Tietokanta tyhjennetään ja luodaan joka käynnistyksellä uudelleen, tämä luo helpon kehitysympäristön jossa data on aina samassa tilassa joka käynnistyksellä.
 
-### InvoicesController.cs
+### InvoicesController.cs - tietokantahaun esimerkki
 
-Luodaan nyt esimerkkinä `InvoicesController` joka toimii rajapintana laskujen luomiselle ja hallitsemiselle.
+Luodaan nyt esimerkkinä `InvoicesController` jolla esittelen yksinkertaista tietokantahakua rajapinnalle.
 
 ```cs
 using System;
@@ -566,20 +566,6 @@ namespace Esimerkki2.Tietokanta.Controllers
                 .Include(t => t.InvoiceRows)
                 .FirstOrDefaultAsync();
         }
-
-        public class InvoiceCreateDto {
-            // Täällä määritellään kentät jota API:n kautta saa luoda
-        }
-
-        [HttpPost] 
-        public async Task<bool> Create([FromBody] InvoiceCreateDto invoiceCreateDto)
-        {   
-            // Tänne voisi toteuttaa laskun luonnin
-            // ... 
-            // dbContext.Invoice.Add(invoice);
-            // await dbContext.SaveChangesAsync();
-            return true;
-        }
     }
 }
 ```
@@ -611,12 +597,122 @@ Nyt voit koittaa Swaggerillä, tai curlilla `curl -X GET 'http://localhost:5000/
 }
 ```
 
+### ClientsController.cs - tallennus tietokantaan, ja syötteen validointi esimerkki
+
+Datan validointiin C#:ssa on suhteellisen vakiintunut konventio käyttää `System.ComponentModel.DataAnnaotations` attribuutteja. Validointi on myös yksi hankalimmisa web apiin liittyvistä ongelmista, joten tällekkin on useita kirjastoja kuten tunnettu [FluentValidation kirjasto](https://github.com/JeremySkinner/FluentValidation), en kuitenkaan käytä sitä tässä esimerkissä.
+
+```cs
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
+using Esimerkki2.Tietokanta.Db;
+using Esimerkki2.Tietokanta.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace Esimerkki2.Tietokanta.Controllers
+{
+    [Route("api/[controller]")]
+    public class ClientsController : Controller
+    {
+        private readonly AppDbContext dbContext;
+
+        public ClientsController(AppDbContext dbContext)
+        {
+            this.dbContext = dbContext;
+        }
+
+        public class CreateClientDto {
+            [MinLength(3)]            
+            public string Name { get; set; } = "";
+            public string Address { get; set; } = "";
+            public string City { get; set; } = "";
+
+            [RegularExpression("(\\d{5})?")]
+            public string PostCode { get; set; } = "";
+
+            [EmailAddress]
+            public string Email { get; set; } = "";
+
+            public string PhoneNumber { get; set; } = "";
+        }
+
+        // Huomaa että palautusmuoto on object, joka on huono, mutta tämä on
+        // yksinkertaisin esimerkki
+        [HttpPost] 
+        public async Task<object> Create([FromBody] CreateClientDto createClientDto)
+        {   
+            if (!ModelState.IsValid) {
+                // Tälle tulee parempi vaihtoehto seuraavassa esimerkissä
+                return ModelState;
+            }
+            // Business ID on vakiona 1 tässä esimerkissä
+            var businessId = 1;
+
+            var newClient = new Client() {
+                City = createClientDto.City,
+                Address = createClientDto.Address,
+                Name = createClientDto.Name,
+                PostCode = createClientDto.PostCode,
+                Email = createClientDto.Email,
+                BusinessId = businessId,
+            };
+            dbContext.Client.Add(newClient);
+            await dbContext.SaveChangesAsync();
+            return newClient;
+        }
+    }
+}
+```
+
+`ModelState.IsValid` tarkistaa että syötteenä oleva `CreateClientDto` ei sisälä virheitä. Koeta virheentarkistuta swaggerilla, esimerkiksi seuraavalla syötteellä:
+
+```json
+{
+  "name": "Matti Meikäläinen",
+  "address": "Kukkaiskuja 23",
+  "city": "Jyväskylä",
+  "postCode": "virhepostikoodi",
+  "email": "virheposti",
+  "phoneNumber": ""
+}
+```
+
+Tulee vastaus (ylimääräiset kentät poistettu tästä esimerkistä):
+
+```json
+{
+  "Email": {
+    "key": "Email",
+    "errors": [
+      {
+        "exception": null,
+        "errorMessage": "The Email field is not a valid e-mail address."
+      }
+    ],
+  },
+  "PostCode": {
+    "key": "PostCode",
+    "errors": [
+      {
+        "exception": null,
+        "errorMessage": "The field PostCode must match the regular expression '(\\d{5})?'."
+      }
+    ],
+  }
+}
+```
+
+Jos syöte on oikea luodaan uusi asiakas. Syötteen tarkistusta hiotaan seuraavassa esimerkissä.
+
 [Voit myös tarkastella tietokannan perusesimerkkin ohjelmakoodeja: Esimerkki2.Tietokanta](Esimerkki2.Tietokanta/)
 
 
 ## Dependency Injection ohjelmakirjaston ymmärtäminen
 
-ASP.NET Core käyttää Microsoftin tekemää Dependency Injection -kirjastoa hallitsemaan eri osien riippuvuuksia. Tarkoituksena on kirjoittaa riippuvuudet Serviceinä, ja järjestelmä hoitaa näiden luomisen automaattisesti. Samaan tapaan kuin esim. Javassa Google Guice tai PHP:ssä Laravel Service container.
+ASP.NET Core käyttää Microsoftin tekemää Dependency Injection -kirjastoa hallitsemaan eri osien riippuvuuksia. Tarkoituksena on kirjoittaa riippuvuudet palveluina (Service), ja järjestelmä hoitaa näiden luomisen automaattisesti. Samaan tapaan kuin esim. Javassa Google Guice tai PHP:ssä Laravel Service container.
 
 Injektiolla voidaan helpottaa mm. testausta, ja mahdollistaa toteutuksen vaihtamisen suhteellisen helposti niissä osissa missä se on tarpeen.
 
@@ -669,15 +765,30 @@ Samalla tavalla toimivat `AddScoped` sekä `AddSingleton`, kullakin on myös use
 
 [Lisätietoja: Introduction to Dependency Injection in ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection)
 
-## Tietokantaesimerkki 2. - Repository pattern, Servicet, Datan validointi
 
-Edellisessä esimerkissä tehtiin paljon pieniä asioita oikaisten, nyt korjataan nämä ja toteutetaan jotain pysyvämpää. Pienemmissä ohjelmissa `AppDbContext` tietokantakäsittelijää voi kutsua kontrollerista suoraan, mutta SQL kyselyiden, ja business logiikan sekoittaminen kontrolleriin tekee asioista hyvin hankalaa isommissa ohjelmistoissa.
+## Middlewaret 
 
-Tarkoitus on jakaa ohjelmakoodi selkeisiin osiin haasteiden eriyttämisellä (separation of concerns), kontrollerit validoivat käyttäjän datan ja kutsuvat servicejä. Servicet käyttävät storeja. Storet tallentavat ja hakevat dataa tietokannasta.
+Middlewaret ovat HTTP kyselyä ennen tai jälkeen ajettavia koodin pätkiä. Esimerkiksi kontrollerista tai jostain sen sisältä tuleva virhe `NotFoundException` voitaisiin näyttää JSON objektina `{ error: "NOT_FOUND" }`, tämä käsitellään kontrollerin ajon jälkeeen. Yleinen toinen esimerkki on syötteen validointi, joka tehdään ennenkö syöte tulee kontrollerille.
+
+### NotFoundException middleware
+
+Oletetaan että tietokanta heittää virheen `NotFoundException` ja halutaan että tällöin HTTP vastaus on aina `404` ja JSON on `{ error: "NOT_FOUND" }` se voitaisiin toteuttaa näin:
+
+-------- TODO: ..........
+
+## Tietokantaesimerkki 2. - Repository pattern, palvelut (Services), ja syötteen validointi
+
+Pienemmissä ohjelmissa `AppDbContext` tietokantakäsittelijää voi kutsua kontrollerista suoraan, mutta SQL kyselyiden, ja liiketoimintalogiikan (Business Logic) sekoittaminen kontrolleriin tekee asioista hyvin hankalaa isommissa ohjelmistoissa.
+
+Tarkoitus on jakaa ohjelma selkeisiin osiin haasteiden eriyttämisellä (separation of concerns):
+
+* Kontrollerit validoivat käyttäjältä tulevan syötteen ja kutsuvat palveluja. 
+* Palvelut käyttävät toisia palveluita ja kutsuvat storeja. 
+* Storet tallentavat ja hakevat malleja tietokannasta.
 
 `Controller <-> Service <-> Store`
 
-Ennen tätä siistitään muutami asioita jotka jäivät tarkoituksella puoli tiehen edellisessä esimerkissä. Ensin kannattaa modelit jakaa omiin tiedostoihinsa.
+Ennen tätä siistitään muutamia asioita, jotka jäivät tarkoituksella puoli tiehen edellisessä esimerkissä. Ensin kannattaa modelit jakaa omiin tiedostoihinsa, jos näin ei ole vielä tehty.
 
 ### SQL-asetukset appsettings.json tiedostoon
 
@@ -869,7 +980,7 @@ namespace Esimerkki3.Tietokanta2.Stores {
 }
 ```
 
-Lstauksen näyttmisessä käytetään EF Coren `Include` metodia joka palauttaessaan rivin täyttää myös rivin viittaukset arvoilla. EF Coressa ei ole vielä viitteiden laiskaa latausta vaan ne pitää itse muistaa listata jos niitä tarvitsee.
+Lstauksen näyttömisessä käytetään EF Coren `Include` metodia, joka palauttaessaan rivin täyttää myös rivin viittaukset arvoilla. EF Coressa ei ole vielä viitteiden laiskaa latausta, vaan ne pitää itse muistaa listata jos niitä tarvitsee.
 
 ### Services layer
 
@@ -979,11 +1090,13 @@ services.AddTransient<InvoiceStore, InvoiceStore>();
 Tässä esimerkissä kaikki Servicet ovat transientteja, eli ne luodaan jokaiselle vaatimukselle uudestaan.
 
 
-### Controllers ja Dto luokat
+### DTO luokat ja validointi
 
-Koska malliolioita ei saa päästää rajapinnalle, niitä varten luodaan Dto (Data Transfer Object) luokat, näitä vastaisi näkymämallit (ViewModel) näkymäpohjaisessa sovelluksessa. Dto:n luominen voi vaikuttaa ensialkuun kovin työläiltä, koska niissä on hyvin paljon samoja kenttiä kuin malliluokissa.
+Koska malliolioita ei saa päästää rajapinnalle, niitä varten luodaan Dto-luokat (Data Transfer Object), näitä vastaisi näkymämallit (ViewModel) näkymäpohjaisessa sovelluksessa. Dto:n luominen voi vaikuttaa ensialkuun kovin työläiltä, koska niissä on hyvin paljon samoja kenttiä kuin malliluokissa.
 
 Dto luokat täytyy myös pystyä muuttamaan takaisin malleiksi, ja malleista takaisin Dto luokiksi. Tätä varten voi käyttää [AutoMapper](http://automapper.org/) kirjastoa, mutta tässä esimerkissä en käytä mitään kirjastoa vaan kirjotan vastineet käsin.
+
+
 
 
 
