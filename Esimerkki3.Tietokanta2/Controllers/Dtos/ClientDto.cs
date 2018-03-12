@@ -11,6 +11,8 @@ namespace Esimerkki3.Tietokanta2.Controllers.Dtos
         public string Name { get; set; } = "";
         public string Address { get; set; } = "";
         public string City { get; set; } = "";
+        
+        [RegularExpression("(\\d{5})?")]
         public string PostCode { get; set; } = "";
 
         [EmailAddress]

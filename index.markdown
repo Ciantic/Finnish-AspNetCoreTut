@@ -125,9 +125,9 @@ Jos ei halua tai pysty asentamaan Visual Studioa, suosittelen käyttämään [Vi
 
 ### Rajapinnan määrittely Routing, Controller ja action
 
-Rajapinta määritellään kontrolleriluokilla, yleensä luokat ovat muotoa esimerkiksi `ValuesController` jossa `Values` saattaa viitata osaan rajapinnan HTTP osoitetta, mutta se ei ole välttämätöntä. Actionilla viitataan HTTP kyselyn käsittelevään metodiin kyseisessä luokassa.
+Rajapinta määritellään ohjainluokilla (Controller), yleensä luokat ovat muotoa esimerkiksi `ValuesController` jossa `Values` saattaa viitata osaan rajapinnan HTTP osoitetta, mutta se ei ole välttämätöntä. Actionilla viitataan HTTP kyselyn käsittelevään metodiin kyseisessä luokassa.
 
-Rajapinnan osoitteen alkuosan muodosta `Route` attribuutti, ja loppuosan actionin määrittelevä `HttpGet` tai esim `HttpPost`, sisään tuleva arvo merkataan attribuutilla `FromQuery` tai `FromBody` esimerkiksi voit korvata **ValuesController.cs** tiedoston kontrollerin seuraavalla:
+Rajapinnan osoitteen alkuosan muodosta `Route` attribuutti, ja loppuosan actionin määrittelevä `HttpGet` tai esim `HttpPost`, sisään tuleva arvo merkataan attribuutilla `FromQuery` tai `FromBody` esimerkiksi voit korvata **ValuesController.cs** tiedoston seuraavalla:
 
 ```cs
 // Tämä määrittelee alkuosaksi "api/values"
@@ -210,9 +210,9 @@ public class ValuesController : Controller
 }
 ```
 
-Route attribuutissa on muutamia maagisia muuttujia, kuten `[controller]` ja `[action]` jotka viittaavat kontrollerin nimeen ja kyseisen actionin nimeen. Samoin sisään tulevia parametrejä voi ripotella `{muuttuja}` tai valinnaiset muuttujat `{muuttuja?}` merkinnällä.
+Route attribuutissa on muutamia maagisia muuttujia, kuten `[controller]` ja `[action]` jotka viittaavat ohjaimen nimeen ja kyseisen actionin nimeen. Samoin sisään tulevia parametrejä voi ripotella `{muuttuja}` tai valinnaiset muuttujat `{muuttuja?}` merkinnällä.
 
-Luokan ei tarvitse periytyä `Controller` luokasta, esimerkiksi jos haluat tehdä protokolla agnostisen API:n, se on mahdollista ilman perintää. Esimerkkinä voisi toteuttaa kontrollerit niin että niiden actionit voisi toimia HTTP:n lisäksi websocketin kautta.
+Luokan ei tarvitse periytyä `Controller` luokasta, esimerkiksi jos haluat tehdä protokolla agnostisen API:n, se on mahdollista ilman perintää. Esimerkkinä voisi toteuttaa ohjaimet niin että niiden actionit voisi toimia HTTP:n lisäksi websocketin kautta.
 
 Rajapinta osaa palauttaa ja ottaa sisäänsä suoraan dataa JSON muodossa, mutta kannattaa pysytellä tyyppiturvallisissa palautus ja sisäänotto muodoissa, eli helposti serialisoitavissa perusluokissa.
 
@@ -680,7 +680,7 @@ namespace Esimerkki2.Tietokanta.Controllers
 }
 ```
 
-Tulee vastaus (ylimääräiset kentät poistettu tästä esimerkistä):
+Tulee vastaus esimerkiksi:
 
 ```json
 {
@@ -688,24 +688,23 @@ Tulee vastaus (ylimääräiset kentät poistettu tästä esimerkistä):
     "key": "Email",
     "errors": [
       {
-        "exception": null,
         "errorMessage": "The Email field is not a valid e-mail address."
       }
-    ],
+    ]
   },
   "PostCode": {
     "key": "PostCode",
     "errors": [
       {
-        "exception": null,
         "errorMessage": "The field PostCode must match the regular expression '(\\d{5})?'."
       }
-    ],
+    ]
   }
 }
 ```
+Yllä olevasta JSON:sta on leikattu epäoleelliset kentät pois, siinä on useita kenttiä joita et ehkä tarvitse. Tätä varten kannattaa luoda oma luokka joka ottaa sisäänsä `ModelStateDictonary` ja muuttaa sen JSON:iksi josas on vain oleelliset kentät.
 
-Jos syöte on oikea luodaan uusi asiakas. Syötteen tarkistusta hiotaan seuraavassa esimerkissä.
+Jos syöte on oikea luodaan uusi asiakas.
 
 [Voit myös tarkastella tietokannan perusesimerkkin ohjelmakoodeja: Esimerkki2.Tietokanta](Esimerkki2.Tietokanta/)
 
@@ -766,23 +765,122 @@ Samalla tavalla toimivat `AddScoped` sekä `AddSingleton`, kullakin on myös use
 [Lisätietoja: Introduction to Dependency Injection in ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/dependency-injection)
 
 
-## Middlewaret 
+## Middlewaret
 
-Middlewaret ovat HTTP kyselyä ennen tai jälkeen ajettavia koodin pätkiä. Esimerkiksi kontrollerista tai jostain sen sisältä tuleva virhe `NotFoundException` voitaisiin näyttää JSON objektina `{ error: "NOT_FOUND" }`, tämä käsitellään kontrollerin ajon jälkeeen. Yleinen toinen esimerkki on syötteen validointi, joka tehdään ennenkö syöte tulee kontrollerille.
+Middlewaret ovat HTTP kyselyä ennen tai jälkeen ajettavia koodin pätkiä. Esimerkiksi ohjaimesta tai jostain sen sisältä tuleva virhe `NotFoundException` voitaisiin näyttää JSON objektina `{ error: "NOT_FOUND" }`, tämä käsitellään suorituksen jälkeen. Yleinen toinen esimerkki on syötteen validointi, joka tehdään ennenkö syöte tulee ohjaimelle.
 
-### NotFoundException middleware
+Edellisessä esimerkissä jos laskua ei löytynyt palautettiin null, tämä ei ole kovinkaan hyvä tapa. Parempi on määritellä omalle rajapinnalle selkeä ja yksiselitteinen tapa palauttaa virheet.
 
-Oletetaan että tietokanta heittää virheen `NotFoundException` ja halutaan että tällöin HTTP vastaus on aina `404` ja JSON on `{ error: "NOT_FOUND" }` se voitaisiin toteuttaa näin:
+### NotFoundException middleware, virheenkäsittelyn esimerkkifiltteri
 
--------- TODO: ..........
+Oletetaan että tietokanta heittää virheen `NotFoundException` ja halutaan että tällöin HTTP vastaus on aina `404` ja palautteena oleva JSON on `{ error: "NOT_FOUND" }` se voitaisiin toteuttaa näin:
+
+```cs
+using System;
+using Esimerkki3.Tietokanta2.Stores; // NotFoundException on määritelty täällä
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
+
+namespace Esimerkki3.Tietokanta2.Mvc
+{
+    public class ApiErrorFilter : Attribute, IExceptionFilter
+    {
+        public void OnException(ExceptionContext context)
+        {
+            if (context.Exception is NotFoundException)
+            {
+                // Tämä ei ole tyyppiturvallista, mutta yksinkertaisin tapa palauttaa JSON result
+                context.Result = new JsonResult(new {
+                    error = "NOT_FOUND"
+                });
+                context.Exception = null; // Nollaa virhe
+                context.ExceptionHandled = true; // Virhe käsitelty
+            }
+
+            // Voit käsitellä tässä filtterissä muitakin exceptioneita...
+        }
+    }
+}
+```
+
+Filtterin voi rekisteröidä millä tahansa tasolla, globaalisti, tai tietylle ohjaimelle tai käsittelijälle. Tässä ohjelmassa on kätevintä käsitellä kaikkiaalta nousevat NotFoundExceptionit joten se rekisteröidään globaalisti näin, avaa **Startup.cs**:
+
+```cs
+public void ConfigureServices(IServiceCollection services)
+{    
+    // ...
+    services.AddMvc(o => {
+        // Tänne täytyy tehdä lambda jossa filtteri konfiguroidaan
+        o.Filters.Add(new ApiErrorFilter());
+    });
+    // ...
+}
+```
+
+### Validointi middleware
+
+On hieman työlästä kirjoittaa `if (!ModelState.IsValid) { ... }` jokaiseen actioniin, joten sille kannattaa myös tehdä globaalisti rekisteörity middleware. Tällöi validointi ja siitä tuleva virheviesti toteutetaan yhtenevästi koko rajapinnalle. ASP.NET Core 2.1 (ei vielä julkaistu) tämä on toteutettu jo valmiiksi.
+
+```cs
+using System;
+using Microsoft.AspNetCore.Mvc.Filters;
+
+namespace Esimerkki3.Tietokanta2.Mvc
+{
+    public class ModelStateValidationFilter : Attribute, IActionFilter
+    {
+        public void OnActionExecuting(ActionExecutingContext context)
+        {
+            if (!context.ModelState.IsValid)
+            {
+                // Tämä on turhan laaja objekti palautettavaksi, 
+                // mutta se millaisen objektin palauttaa on rajapinnasta kiinni
+                context.Result = new JsonResult(context.ModelState); 
+            }
+        }
+
+        public void OnActionExecuted(ActionExecutedContext context) { }
+    }
+}
+```
+
+Sekä rekisteröinti koko ohjelmalle:
+
+
+```cs
+public void ConfigureServices(IServiceCollection services)
+{    
+    // ...
+    services.AddMvc(o => {
+        o.Filters.Add(new ApiErrorFilter()); // Tämä lisätään tänne 
+        o.Filters.Add(new ModelStateValidationFilter()); // Tämä lisätään tänne 
+    });
+    // ...
+}
+```
+
+Tämän jälkeen validointia ei tarvitse suorittaa enää itse actionissa vaan se tehdään automaattisesti ennenkö actioniin edes päästään.
+
+Rekisteröinnit voi suorittaa myös ohjain tai käisttelijä kohtaisesti, esimerkiksi:
+
+```cs
+[ModelStateValidation] // <-- tämä rekisteröi filterin vain tälle ohjaimelle
+public class ClientsController : Controller {
+    [ModelStateValidation] // <-- tämä rekisteröisi filterin vain tälle actionille
+    public async Task<object> Create([FromBody] CreateClientDto createClientDto) {
+        // ...
+    }
+}
+```
+
 
 ## Tietokantaesimerkki 2. - Repository pattern, palvelut (Services), ja syötteen validointi
 
-Pienemmissä ohjelmissa `AppDbContext` tietokantakäsittelijää voi kutsua kontrollerista suoraan, mutta SQL kyselyiden, ja liiketoimintalogiikan (Business Logic) sekoittaminen kontrolleriin tekee asioista hyvin hankalaa isommissa ohjelmistoissa.
+Pienemmissä ohjelmissa `AppDbContext` tietokantakäsittelijää voi kutsua ohjaimesta suoraan, mutta SQL kyselyiden, ja liiketoimintalogiikan (Business Logic) sekoittaminen ohjaimiin (Controller) tekee asioista hyvin hankalaa isommissa ohjelmistoissa.
 
 Tarkoitus on jakaa ohjelma selkeisiin osiin haasteiden eriyttämisellä (separation of concerns):
 
-* Kontrollerit validoivat käyttäjältä tulevan syötteen ja kutsuvat palveluja. 
+* Ohjaimet validoivat käyttäjältä tulevan syötteen ja kutsuvat palveluja. 
 * Palvelut käyttävät toisia palveluita ja kutsuvat storeja. 
 * Storet tallentavat ja hakevat malleja tietokannasta.
 
@@ -1011,7 +1109,7 @@ Tarkoitus on luoda palvelut ja toiminnot kullekkin ilmeiselle käyttötapauksell
 
 Huomaa että esimerkiksi `InvoiceService` ja sen rajapinta saattaa näyttää hyvin samalta mitä `InvoiceStore` mutta ne ovat eri tasoilla, ja toteuttavat eri asiaa ohjelmassa. Vaikka tässä esimerkissä `InvoiceService` on hyvin tyhmä ja kutsuu melkein suoraan storea, niin yleensä ohjelmiston kasvaessa palvelutasolla olevat luokat tekevät paljon enemmän. 
 
-ASP.NET Coressa käyttäjien oikeustarkistus alkaa kontrolleritasolta joten palvelutasolla ei ole erikseen oikeustarkistusta toiminnoissa. Oikeustarkistus ja kirjautumisjärjestelmän integrointi käsitellään vasta seuraavassa esimerkissä.
+ASP.NET Coressa käyttäjien oikeustarkistus alkaa ohjaintasolla joten palvelutasolla ei ole erikseen oikeustarkistusta toiminnoissa. Oikeustarkistus ja kirjautumisjärjestelmän integrointi käsitellään vasta seuraavassa esimerkissä.
 
 #### `InvoiceService` esimerkkinä
 

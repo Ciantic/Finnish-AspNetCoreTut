@@ -13,6 +13,7 @@ namespace Esimerkki3.Tietokanta2.Models
         public string Name { get; set; }
         public int Quantity { get; set; }
         public Decimal Amount { get; set; }
+        public int Sort { get; set; } = 0;
         public DateTime Created { get; set; }
         public DateTime Modified { get; set; }
     }

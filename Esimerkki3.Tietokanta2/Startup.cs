@@ -6,6 +6,7 @@ using Esimerkki3.Tietokanta2.Db;
 using Esimerkki3.Tietokanta2.Models;
 using Esimerkki3.Tietokanta2.Services;
 using Esimerkki3.Tietokanta2.Stores;
+using Esimerkki3.Tietokanta2.Mvc;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -39,7 +40,10 @@ namespace Esimerkki3.Tietokanta2
                 .AddEntityFrameworkStores<AppDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.AddMvc();
+            services.AddMvc(o => {
+                o.Filters.Add(new ApiErrorFilter());
+                o.Filters.Add(new ModelStateValidationFilter());
+            });
 
             services.AddDbContext<AppDbContext>(o => {
                 o.UseSqlite(Configuration.GetConnectionString("Database"));
