@@ -17,5 +17,9 @@ namespace Esimerkki3.Tietokanta2.Db
         public DbSet<InvoiceRow> InvoiceRow { get; set; }
 
         public DbSet<Email> Email { get; set; }
+
+        override protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+            optionsBuilder.EnableSensitiveDataLogging();
+        }
     }
 }

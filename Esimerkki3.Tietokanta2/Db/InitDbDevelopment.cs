@@ -323,6 +323,7 @@ namespace Esimerkki3.Tietokanta2.Db
                     for (int k = 0; k < 15; k++)
                     {
                         var invoice = GenerateInvoice(business, client);        
+                        entities.AddRange(invoice.InvoiceRows);
                         entities.Add(invoice);
                     }
                 }

@@ -42,21 +42,26 @@ namespace Esimerkki3.Tietokanta2.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<InvoiceDto> Update(int id, [FromBody] InvoiceDto invoiceDto) {
+        public async Task<InvoiceDto> Update(int id, [FromBody] UpdateInvoiceDto updateInvoiceDto) {
             // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
             // haetaan käyttäjän tiedoista
             var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, invoiceDto.Id);
+            var invoice = await invoiceService.GetByBusiness(businessId, id);
 
             // Tästä puuttuu oikeustarkistus että client Id on tämän yrityksen
-            // asiakkaan ID. Oikeustarkistukset tehdään seuraavassa esimerkissä
+            // asiakkaan ID. Sekä tarkistus että laskurivien ID:t eivät vaihdu
+            // laskulta toiselle. Oikeustarkistukset tehdään seuraavassa
+            // esimerkissä
 
             // Päivitä laskua dtosta
-            invoiceDto.UpdateInvoice(invoice);
+            updateInvoiceDto.UpdateInvoice(invoice);
             await invoiceService.Update(invoice);
 
-            // Palauta päivitetty lasku
-            return InvoiceDto.FromInvoice(invoice);
+            // Palauta päivitetty lasku, kierretään tietokannan kautta jotta
+            // data päivittyy oikein
+            return InvoiceDto.FromInvoice(
+                await invoiceService.GetByBusiness(businessId, id)
+            );
         }
 
         [HttpPost]

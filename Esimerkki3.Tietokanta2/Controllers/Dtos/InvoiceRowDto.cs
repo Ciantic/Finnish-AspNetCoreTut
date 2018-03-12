@@ -21,14 +21,11 @@ namespace Esimerkki3.Tietokanta2.Controllers.Dtos
             };
         }
 
-        public InvoiceRow ToInvoiceRow(Invoice invoice) {
-            return new InvoiceRow() {
-                Id = Id ?? 0,
-                Name = Name,
-                Quantity = Quantity,
-                Amount = Amount,
-                Invoice = invoice
-            };
+        public InvoiceRow UpdateInvoiceRow(InvoiceRow invoiceRow) {
+            invoiceRow.Name = Name;
+            invoiceRow.Quantity = Quantity;
+            invoiceRow.Amount = Amount;
+            return invoiceRow;
         }
     }
 }

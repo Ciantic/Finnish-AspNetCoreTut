@@ -19,7 +19,19 @@ namespace Esimerkki3.Tietokanta2.Stores {
         public async Task Update(Invoice invoice) {
             invoice.Modified = DateTime.UtcNow;
             dbContext.Invoice.Update(invoice);
+            var newRowIds = invoice.InvoiceRows.Select(t => t.Id).ToArray();
+            var removedRows = await dbContext
+                .InvoiceRow
+                .Where(t => 
+                    t.InvoiceId == invoice.Id &&
+                    !newRowIds.Contains(t.Id)
+                )
+                .ToListAsync();
+
+            dbContext.RemoveRange(removedRows);
+            
             await dbContext.SaveChangesAsync();
+            
         }
 
         public async Task<Invoice> Create(Invoice invoice) {
@@ -37,7 +49,12 @@ namespace Esimerkki3.Tietokanta2.Stores {
 
         public async Task<Invoice> GetByBusiness(int businessId, int id) {
             var value = await dbContext.Invoice
+                .Include(t => t.InvoiceRows)
+                .Include(t => t.Client)
                 .FirstOrDefaultAsync(t => t.Id == id && t.BusinessId == businessId);
+
+            value.InvoiceRows = value.InvoiceRows.OrderBy(t => t.Sort).ToList();
+            
             if (value == null) {
                 throw new NotFoundException();
             }
@@ -46,9 +63,9 @@ namespace Esimerkki3.Tietokanta2.Stores {
 
         public async Task<ICollection<Invoice>> ListLatestByBusiness(int businessId) {
             return await dbContext.Invoice
-                .Where(t => t.BusinessId == businessId)
                 .Include(t => t.InvoiceRows) // Sisällytä kyselyyn laskurivien tiedot
                 .Include(t => t.Client) // Sisällytä kyselyyn asiakkaantiedot
+                .Where(t => t.BusinessId == businessId)
                 .OrderBy(t => t.Created)
                 .ToListAsync();
         }
