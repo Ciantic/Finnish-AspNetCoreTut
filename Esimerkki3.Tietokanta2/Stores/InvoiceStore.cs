@@ -18,8 +18,14 @@ namespace Esimerkki3.Tietokanta2.Stores {
 
         public async Task Update(Invoice invoice) {
             invoice.Modified = DateTime.UtcNow;
-            dbContext.Invoice.Update(invoice);
             var newRowIds = invoice.InvoiceRows.Select(t => t.Id).ToArray();
+
+            // Update:n kutsuminen ei itseasiassa ole pakollista, sillä EF Core
+            // osaa hallita olioiden muutoksia sisäisesti. Sisäinen hallinta voi
+            // olla joskus varsin ongelmallista, sillä ei ole helposti
+            // ennustettavissa mitä seuraava SaveChangesAsync() tekee.
+            dbContext.Invoice.Update(invoice); 
+
             var removedRows = await dbContext
                 .InvoiceRow
                 .Where(t => 
@@ -30,8 +36,8 @@ namespace Esimerkki3.Tietokanta2.Stores {
 
             dbContext.RemoveRange(removedRows);
             
+            // Tämä ajaa SQL kyselyt ja siihen asti kerätyt muutokset
             await dbContext.SaveChangesAsync();
-            
         }
 
         public async Task<Invoice> Create(Invoice invoice) {
@@ -54,7 +60,7 @@ namespace Esimerkki3.Tietokanta2.Stores {
                 .FirstOrDefaultAsync(t => t.Id == id && t.BusinessId == businessId);
 
             value.InvoiceRows = value.InvoiceRows.OrderBy(t => t.Sort).ToList();
-            
+
             if (value == null) {
                 throw new NotFoundException();
             }

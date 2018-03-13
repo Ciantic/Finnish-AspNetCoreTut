@@ -42,7 +42,10 @@ namespace Esimerkki3.Tietokanta2.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<InvoiceDto> Update(int id, [FromBody] UpdateInvoiceDto updateInvoiceDto) {
+        public async Task<InvoiceDto> Update(
+            int id, 
+            [FromBody] InvoiceUpdateDto updateInvoiceDto)
+        {
             // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
             // haetaan käyttäjän tiedoista
             var businessId = 1;
@@ -91,7 +94,7 @@ namespace Esimerkki3.Tietokanta2.Controllers
                 .ToList();
         }
 
-        [HttpPost("[action]/{id}")]
+        [HttpPost("{id}/[action]")]
         public async Task<InvoiceDto> Send(int id) {
             // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
             // haetaan käyttäjän tiedoista

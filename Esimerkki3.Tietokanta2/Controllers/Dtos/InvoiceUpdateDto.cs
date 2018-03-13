@@ -6,7 +6,7 @@ using Esimerkki3.Tietokanta2.Models;
 
 namespace Esimerkki3.Tietokanta2.Controllers.Dtos
 {
-    public class UpdateInvoiceDto {
+    public class InvoiceUpdateDto {
 
         [MinLength(3)]
         public string Title { get; set; } = "";
