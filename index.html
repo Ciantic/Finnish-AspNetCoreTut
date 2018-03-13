@@ -15,12 +15,106 @@
     <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
 
     <script>
+        // https://github.com/arve0/markdown-it-header-sections/blob/master/index.js
+        function headerSections(md) {
+
+            function addSections(state) {
+                var tokens = [];  // output
+                var Token = state.Token;
+                var sections = [];
+                var nestedLevel = 0;
+
+                function openSection(attrs) {
+                    var t = new Token('section_open', 'section', 1);
+                    t.block = true;
+                    t.attrs = attrs && attrs.map(function (attr) { return [attr[0], attr[1]] });  // copy
+                    return t;
+                }
+
+                function closeSection() {
+                    var t = new Token('section_close', 'section', -1);
+                    t.block = true;
+                    return t;
+                }
+
+                function closeSections(section) {
+                    while (last(sections) && section.header <= last(sections).header) {
+                        sections.pop();
+                        tokens.push(closeSection());
+                    }
+                }
+
+                function closeSectionsToCurrentNesting(nesting) {
+                    while (last(sections) && nesting < last(sections).nesting) {
+                        sections.pop();
+                        tokens.push(closeSection());
+                    }
+                }
+
+                function closeAllSections() {
+                    while (sections.pop()) {
+                        tokens.push(closeSection());
+                    }
+                }
+
+                for (var i = 0, l = state.tokens.length; i < l; i++) {
+                    var token = state.tokens[i];
+
+                    // record level of nesting
+                    if (token.type.search('heading') !== 0) {
+                        nestedLevel += token.nesting;
+                    }
+                    if (last(sections) && nestedLevel < last(sections).nesting) {
+                        closeSectionsToCurrentNesting(nestedLevel);
+                    }
+
+                    // add sections before headers
+                    if (token.type == 'heading_open') {
+                        var section = {
+                            header: headingLevel(token.tag),
+                            nesting: nestedLevel
+                        };
+                        if (last(sections) && section.header <= last(sections).header) {
+                            closeSections(section);
+                        }
+                        tokens.push(openSection(token.attrs));
+                        if (token.attrIndex('id') !== -1) {
+                            // remove ID from token
+                            token.attrs.splice(token.attrIndex('id'), 1);
+                        }
+                        sections.push(section);
+                    }
+
+                    tokens.push(token);
+                }  // end for every token
+                closeAllSections();
+
+                state.tokens = tokens;
+            }
+
+            md.core.ruler.push('header_sections', addSections);
+
+        };
+
+        function headingLevel(header) {
+            return parseInt(header.charAt(1));
+        }
+
+        function last(arr) {
+            return arr.slice(-1)[0];
+        }
+    </script>
+
+    <script>
         // Dependencyless markdown file rendering
         // Jari Pennanen, 2017
         "use strict";
         function compile(content, lastmodified) {
             const tm = texmath.use(katex);
-            const md = markdownit().use(tm).use(markdownitFootnote);
+            const md = markdownit()
+                .use(tm)
+                .use(markdownitFootnote)
+                .use(headerSections);
             const body = document.querySelector("body");
             const title = document.querySelector("title");
             const lastmodifiedEl = document.createElement("div");
@@ -86,6 +180,16 @@
             font-family: 'Open Sans', sans-serif;
             font-size: 15px;
         }
+        body > section > section {
+            position: relative;
+            margin-top: 2em;
+            border-top: 1px solid gray;
+            padding-top: 2em;
+        }
+        body > section > section > h2 {
+            padding: 0 0 0.7em;
+            background: #fff;
+        }
         h1,h2,h3,h4,h5 {
             margin: 0;
             padding: 0.75em 0 0.35em 0;
@@ -95,9 +199,6 @@
             font-size: 4em;
         }
         h2 {
-            margin-top: 2em;
-            border-top: 1px solid gray;
-            padding-top: 2em;
             font-size: 2.5em;
         }
         h3 {

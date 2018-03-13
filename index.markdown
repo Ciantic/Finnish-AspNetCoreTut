@@ -819,7 +819,7 @@ public void ConfigureServices(IServiceCollection services)
 
 ### Validointi middleware
 
-On hieman työlästä kirjoittaa `if (!ModelState.IsValid) { ... }` jokaiseen actioniin, joten sille kannattaa myös tehdä globaalisti rekisteörity middleware. Tällöi validointi ja siitä tuleva virheviesti toteutetaan yhtenevästi koko rajapinnalle. ASP.NET Core 2.1 (ei vielä julkaistu) tämä on toteutettu jo valmiiksi.
+On hieman työlästä kirjoittaa `if (!ModelState.IsValid) { ... }` jokaiseen actioniin, joten sille kannattaa myös tehdä globaalisti rekisteörity middleware. Tällöi validointi ja siitä tuleva virheviesti toteutetaan yhtenevästi koko rajapinnalle. ASP.NET Core 2.1 (ei vielä julkaistu) tämä [on toteutettu jo valmiiksi](https://blogs.msdn.microsoft.com/webdev/2018/02/27/asp-net-core-2-1-web-apis/).
 
 ```cs
 using System;
@@ -873,8 +873,7 @@ public class ClientsController : Controller {
 }
 ```
 
-
-## Tietokantaesimerkki 2. - Repository pattern, palvelut (Services), ja syötteen validointi
+## Tietokantaesimerkki 2. - Repository pattern, palvelut, DTO
 
 Pienemmissä ohjelmissa `AppDbContext` tietokantakäsittelijää voi kutsua ohjaimesta suoraan, mutta SQL kyselyiden, ja liiketoimintalogiikan (Business Logic) sekoittaminen ohjaimiin (Controller) tekee asioista hyvin hankalaa isommissa ohjelmistoissa.
 
@@ -886,127 +885,13 @@ Tarkoitus on jakaa ohjelma selkeisiin osiin haasteiden eriyttämisellä (separat
 
 `Controller <-> Service <-> Store`
 
-Ennen tätä siistitään muutamia asioita, jotka jäivät tarkoituksella puoli tiehen edellisessä esimerkissä. Ensin kannattaa modelit jakaa omiin tiedostoihinsa, jos näin ei ole vielä tehty.
-
-### SQL-asetukset appsettings.json tiedostoon
-
-Tietokannan asetukset kovakoodattiin ohjelmakoodiin, siirretään ne nyt konfigurointi tiedostoon, avaa **appsettings.Development.json**, syötä tietokannan asetus sinne näin:
-
-```json
-"ConnectionStrings" : {
-    "Database" : "Data Source=esimerkki.development.db;"
-}
-```
-
-Nyt muokataan **Startup.cs** tiedostoa siten että edellisessä esimerkissä kovakoodattu yhteysosoite haetaan konfiguraatiotiedostota, avaa `ConfigureServices` metodi ja muokkaa se seuraavaksi:
-
-```cs
-services.AddDbContext<AppDbContext>(o => {
-    o.UseSqlite(Configuration.GetConnectionString("Database"));
-});
-```
-
-### Testi datalle oma luokka
-
-Siirretään tietokannan luontia varten tehty `CreateTestData()` metodi omaan luokkaansa, luodaan ensin rajapinta `IInitDb` joka toimii perustana tietokannan alustamiselle käynnistyessä.
-
-```cs
-public interface IInitDb
-{
-    Task Init();
-}
-```
-
-Luo luokka development tilaa varten joka toteuttaaa `IInitDb` rajapinnan:
-
-```cs
-public class InitDbDevelopment : IInitDb
-{
-    private readonly AppDbContext appDbContext;
-
-    public InitDbDevelopment(AppDbContext appDbContext)
-    {
-        this.appDbContext = appDbContext;
-    }
-
-    private async Task CreateTestData() {
-        // Siirrä edellisessä esimerkissä luomasi testidatan lisäys tänne
-    }
-
-    public async Task Init()
-    {
-        await CreateTestData();
-    }
-}
-```
-
-Esimerkkiohjelmakoodeissani on testi datan luonnille huomattavasti kehittyneempi esimerkki jossa generoin dataa testitietokantaan ohjelmallisesti. Jos haluat generoida dataa etkä kirjoittaa sitä itse se kannatta toteuttaa jotenkin vastaavasti.
-
-Luo myös luokka tuotantotilaa varten, vaikkei sitä tässä esimerkissä käytetä:
-
-```cs
-public class InitDbProduction : IInitDb
-{
-    public async Task Init()
-    {
-        // Voit ajaa erinäköisiä toimenpiteitä prosessin käynnistyksessä
-        // tässä kohti, joissain tilanteissa esim migraatioita, tarkistuksia tms.
-
-        // Huomattavaa on että ASP.NET Core prosesseja käynnistetään
-        // tarvittaessa ja niitä on usein elossa useita samaan aikaan eli
-        // toiminnot joita tuotannossa tässä kohti voi ajaa on hyvin
-        // rajattuja
-    }
-}
-```
-
-Voidakseen konditionaalisesti käyttää `InitDbProduction` tai `InitDbDevelopment` luokkaa täytyy ohjelman käynnistysympäristön tieto saada myös ConfigureServices metodissa, määritellään `IHostingEnvironment` argumentiksi `Startup` rakentajassa, eli muokataan rakentaja ensin seuraavanlaiseksi:
-
-```cs
-    public class Startup
-    {
-
-        public IConfiguration Configuration { get; }
-
-        public IHostingEnvironment Environment { get; }
-        
-        public Startup(IHostingEnvironment env, IConfiguration configuration)
-        {
-            Configuration = configuration;
-            Environment = env; // Ottaa environment tiedon paikalliseen muuttujaan
-        }
-
-        // ...
-    }
-```
-
-Määritellään toteutus `IInitDb` rajapinnalle siitä riippuen kummassa tilassa ohjelma on käynnistetty. Lisätään **Startup.cs** tiedostoon poikkeus sen mukaan kummassa tilassa ohjelma on, muokkaa `ConfigureServices()` metodia ja lisää rivit:
-
-```cs
-if (Environment.IsProduction()) {
-    services.AddTransient<IInitDb, InitDbProduction>();
-} else if (Environment.IsDevelopment()) {
-    services.AddTransient<IInitDb, InitDbDevelopment>();
-}
-```
-
-Muuta testidatan kutsu **Startup.cs** tiedoston `Configure()` metodissa seuraavaksi:
-
-```cs
-using (var scoped = app.ApplicationServices.CreateScope()) {
-    scoped.ServiceProvider.GetRequiredService<IInitDb>()
-        .Init().GetAwaiter().GetResult();
-}
-```
-
-Tämä hakee `IInitDb` luokan toteutuksen ja kutsuu sen `Init()` metodia.
-
+Tämä esimerkki esittelee miten ohjelma alkaisi rakentumaan, ja alle otettuihin esimerkkeihin on otettu pala uusista osista, loput osat voi tarkastella ohjelmakoodeista, ne ovat samojen esimerkkien toistamista suurilta osin. Esimerkissä on paljon muitakin pieniä parannuksia joita en esittele tässä dokumentissä, esimerkiksi testidata generoidaan tietokantaan, tai tietokantayhteysasetukset haetaan asetustiedostosta. Näitä kannattaa katsoa esimerkkikoodeista.
 
 ### Repository pattern (Stores)
 
-Tietokannan käsittely kannattaa siirtää omiin luokkiinsa, käytän tässä repository patternin kaltaista suunnittelumallia, store jälkiliitettä käytetään esimerkiksi Identity kirjaston luokissa. Luokat ovat seuraavat:
+Tietokannan käsittely kannattaa siirtää omiin luokkiinsa, käytän tässä repository patternin kaltaista suunnittelumallia, store jälkiliitettä käytetään esimerkiksi Identity kirjaston luokissa. Luokat ovat seuraavat esimerkkiohjelmassani:
 
-* `InvoiceStore` - laskut
+* `InvoiceStore` - laskut ja laskurivit
 * `BusinessStore` - yritykset
 * `ClientStore` - asiakkaat
 * `EmailStore` - sähköpostit
@@ -1019,70 +904,85 @@ Tämä suunnittelumalli ei ole sopiva jos halutaan tietotaulujen (DataGrid) kalt
 
 Tämä store tallentaa, lukee ja hakee ohjelman laskuja, voit katsoa muut Storet esimerkkikoodeista. En käytä tässä mitään yleistystä, perintää, tai koodin generointia CRUD toimintojen tekemiseksi. 
 
+Tässä on pienenä poikkeuksena se että tämä store hallitsee myös kyseisen laskun laskurivien tallentamisen.
+
 ```cs
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Esimerkki3.Tietokanta2.Db;
-using Esimerkki3.Tietokanta2.Models;
-using Microsoft.EntityFrameworkCore;
+public class InvoiceStore
+{
+    private readonly AppDbContext dbContext;
 
-namespace Esimerkki3.Tietokanta2.Stores {
-    public class InvoiceStore
+    public InvoiceStore(AppDbContext dbContext)
     {
-        private readonly AppDbContext dbContext;
+        this.dbContext = dbContext;
+    }
 
-        public InvoiceStore(AppDbContext dbContext)
-        {
-            this.dbContext = dbContext;
-        }
+    public async Task Update(Invoice invoice) {
+        invoice.Modified = DateTime.UtcNow;
+        var newRowIds = invoice.InvoiceRows.Select(t => t.Id).ToArray();
 
-        public async Task Update(Invoice invoice) {
-            invoice.Modified = DateTime.UtcNow;
-            dbContext.Invoice.Update(invoice);
-            await dbContext.SaveChangesAsync();
-        }
+        // Update:n kutsuminen ei itseasiassa ole pakollista, sillä EF Core
+        // osaa hallita olioiden muutoksia sisäisesti. Sisäinen hallinta voi
+        // olla joskus varsin ongelmallista, sillä ei ole helposti
+        // ennustettavissa mitä seuraava SaveChangesAsync() tekee.
+        dbContext.Invoice.Update(invoice); 
 
-        public async Task<Invoice> Create(Invoice invoice) {
-            invoice.Created = DateTime.UtcNow;
-            invoice.Modified = DateTime.UtcNow;
-            dbContext.Invoice.Add(invoice);
-            await dbContext.SaveChangesAsync();
-            return invoice;
-        }
+        var removedRows = await dbContext
+            .InvoiceRow
+            .Where(t => 
+                t.InvoiceId == invoice.Id &&
+                !newRowIds.Contains(t.Id)
+            )
+            .ToListAsync();
 
-        public async Task Remove(Invoice invoice) {
-            dbContext.Invoice.Remove(invoice);
-            await dbContext.SaveChangesAsync();
-        }
+        dbContext.RemoveRange(removedRows);
+        
+        // Tämä ajaa SQL kyselyt ja siihen asti kerätyt muutokset
+        await dbContext.SaveChangesAsync();
+    }
 
-        public async Task<Invoice> GetByBusiness(int businessId, int id) {
-            var value = await dbContext.Invoice
-                .FirstOrDefaultAsync(t => t.Id == id && t.BusinessId == businessId);
-            if (value == null) {
-                throw new NotFoundException();
-            }
-            return value;
-        }
+    public async Task<Invoice> Create(Invoice invoice) {
+        invoice.Created = DateTime.UtcNow;
+        invoice.Modified = DateTime.UtcNow;
+        dbContext.Invoice.Add(invoice);
+        await dbContext.SaveChangesAsync();
+        return invoice;
+    }
 
-        public async Task<ICollection<Invoice>> ListLatestByBusiness(int businessId) {
-            return await dbContext.Invoice
-                .Where(t => t.BusinessId == businessId)
-                .Include(t => t.InvoiceRows) // Sisällytä kyselyyn laskurivien tiedot
-                .Include(t => t.Client) // Sisällytä kyselyyn asiakkaantiedot
-                .OrderBy(t => t.Created)
-                .ToListAsync();
+    public async Task Remove(Invoice invoice) {
+        dbContext.Invoice.Remove(invoice);
+        await dbContext.SaveChangesAsync();
+    }
+
+    public async Task<Invoice> GetByBusiness(int businessId, int id) {
+        var value = await dbContext.Invoice
+            .Include(t => t.InvoiceRows)
+            .Include(t => t.Client)
+            .FirstOrDefaultAsync(t => t.Id == id && t.BusinessId == businessId);
+
+        value.InvoiceRows = value.InvoiceRows.OrderBy(t => t.Sort).ToList();
+
+        if (value == null) {
+            throw new NotFoundException();
         }
+        return value;
+    }
+
+    public async Task<ICollection<Invoice>> ListLatestByBusiness(int businessId) {
+        return await dbContext.Invoice
+            .Include(t => t.InvoiceRows) // Sisällytä kyselyyn laskurivien tiedot
+            .Include(t => t.Client) // Sisällytä kyselyyn asiakkaantiedot
+            .Where(t => t.BusinessId == businessId)
+            .OrderBy(t => t.Created)
+            .ToListAsync();
     }
 }
 ```
 
 Lstauksen näyttömisessä käytetään EF Coren `Include` metodia, joka palauttaessaan rivin täyttää myös rivin viittaukset arvoilla. EF Coressa ei ole vielä viitteiden laiskaa latausta, vaan ne pitää itse muistaa listata jos niitä tarvitsee.
 
-### Services layer
+### Palvelut
 
-Tarkoitus on luoda palvelut ja toiminnot kullekkin ilmeiselle käyttötapaukselle:
+Tarkoitus on luoda palvelut (Service) ja toiminnot kullekkin ilmeiselle käyttötapaukselle:
 
 * Yritykset rekisteröityvät
     * `BusinessService.Register()`
@@ -1114,58 +1014,47 @@ ASP.NET Coressa käyttäjien oikeustarkistus alkaa ohjaintasolla joten palveluta
 #### `InvoiceService` esimerkkinä
 
 ```cs
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Esimerkki3.Tietokanta2.Db;
-using Esimerkki3.Tietokanta2.Models;
-using Esimerkki3.Tietokanta2.Stores;
-using Microsoft.EntityFrameworkCore;
+public class InvoiceService
+{
+    private readonly InvoiceStore invoiceStore;
+    private readonly NotificationSender notificationSender;
 
-namespace Esimerkki3.Tietokanta2.Services {
-    public class InvoiceService
+    public InvoiceService(InvoiceStore invoiceStore, NotificationSender notificationSender)
     {
-        private readonly InvoiceStore invoiceStore;
-        private readonly NotificationSender notificationSender;
+        this.invoiceStore = invoiceStore;
+        this.notificationSender = notificationSender;
+    }
 
-        public InvoiceService(InvoiceStore invoiceStore, NotificationSender notificationSender)
-        {
-            this.invoiceStore = invoiceStore;
-            this.notificationSender = notificationSender;
-        }
+    public async Task Update(Invoice invoice) {
+        await invoiceStore.Update(invoice);
+    }
 
-        public async Task Update(Invoice invoice) {
-            await invoiceStore.Update(invoice);
-        }
+    public async Task<Invoice> Create(Invoice invoice) {
+        return await invoiceStore.Create(invoice);
+    }
 
-        public async Task<Invoice> Create(Invoice invoice) {
-            return await invoiceStore.Create(invoice);
-        }
+    public async Task Remove(Invoice invoice) {
+        await invoiceStore.Remove(invoice);
+    }
 
-        public async Task Remove(Invoice invoice) {
-            await invoiceStore.Remove(invoice);
-        }
+    public async Task<Invoice> Send(Invoice invoice) {
+        invoice.Sent = DateTime.UtcNow;
+        await invoiceStore.Update(invoice);
+        await notificationSender.SendInvoice(invoice);
+        return invoice;
+    }
 
-        public async Task<Invoice> Send(Invoice invoice) {
-            invoice.Sent = DateTime.UtcNow;
-            await invoiceStore.Update(invoice);
-            await notificationSender.SendInvoice(invoice);
-            return invoice;
-        }
+    public async Task<Invoice> GetByBusiness(int businessId, int id) {
+        return await invoiceStore.GetByBusiness(businessId, id);
+    }
 
-        public async Task<Invoice> GetByBusiness(int businessId, int id) {
-            return await invoiceStore.GetByBusiness(businessId, id);
-        }
-
-        public async Task<ICollection<Invoice>> ListLatestByBusiness(int businessId) {
-            return await invoiceStore.ListLatestByBusiness(businessId);
-        }
+    public async Task<ICollection<Invoice>> ListLatestByBusiness(int businessId) {
+        return await invoiceStore.ListLatestByBusiness(businessId);
     }
 }
 ```
 
-### Service ja Storen rekisteröinti
+### Service ja Storen rekisteröinti riippuvuusinjektiolle
 
 Servicet ja Storet täytyy rekisteröidä Dependency Injection kirjastolle, tämä tapahtuu muokkaamalla **Startup.cs** tiedostoa ja lisäämällä ne `ConfigureServices()` metodiin:
 
@@ -1188,15 +1077,138 @@ services.AddTransient<InvoiceStore, InvoiceStore>();
 Tässä esimerkissä kaikki Servicet ovat transientteja, eli ne luodaan jokaiselle vaatimukselle uudestaan.
 
 
-### DTO luokat ja validointi
+### DTO luokat
 
 Koska malliolioita ei saa päästää rajapinnalle, niitä varten luodaan Dto-luokat (Data Transfer Object), näitä vastaisi näkymämallit (ViewModel) näkymäpohjaisessa sovelluksessa. Dto:n luominen voi vaikuttaa ensialkuun kovin työläiltä, koska niissä on hyvin paljon samoja kenttiä kuin malliluokissa.
 
 Dto luokat täytyy myös pystyä muuttamaan takaisin malleiksi, ja malleista takaisin Dto luokiksi. Tätä varten voi käyttää [AutoMapper](http://automapper.org/) kirjastoa, mutta tässä esimerkissä en käytä mitään kirjastoa vaan kirjotan vastineet käsin.
 
+#### InvoiceDto.cs - Laskun palauttava DTO
 
+Rajapinnasta ulos tuleva luokka joka määrittelee näkyvät kentät. Malliolio `Invoice` täytyy pystyä muuntamaan palautettavaksi luokaksi joten tähän on tehty staattinen rakentaja `FromInvoice()` joka luo `InvoiceDto`:n mallioliosta.
 
+```cs
+public class InvoiceDto {
+    public int Id { get; set; }
 
+    public string Title { get; set; } = "";
+    public DateTime? Sent { get; set; }
+
+    public int? ClientId { get; set; }
+    public ClientDto Client { get; set; }
+    public List<InvoiceRowDto> InvoiceRows { get; set; } = new List<InvoiceRowDto>();
+    public DateTime Created { get; set; }
+    public DateTime Modified { get; set; }
+
+    public static InvoiceDto FromInvoice(Invoice invoice) {
+        // Tässä kannattaisi käyttää AutoMapper kirjastoa eikä kirjoittaa näitä käsin
+        return new InvoiceDto() {
+            Id = invoice.Id,
+            Title = invoice.Title,
+            Sent = invoice.Sent,
+            ClientId = invoice.ClientId,
+            Client = ClientDto.FromClient(invoice.Client),
+            Created = invoice.Created,
+            Modified = invoice.Modified,
+            InvoiceRows = invoice.InvoiceRows
+                .Select(t => InvoiceRowDto.FromInvoiceRow(t))
+                .ToList()
+        };
+    }
+
+}
+```
+
+#### InvoiceUpdateDto.cs - Laskun päivitys DTO
+
+Tarkoituksena on luoda luokka joka otetaan vastaan kun muokataan laskua, tässä on vain ne kentät jotka muokkauksessa on sallittua muuttaa. Esimerkiksi täällä ei ole `Created` tai `Sent` kenttiä. Tämän luokan kentät täytyy myös pystyä päivittämään itse oikeaan malliolioon `Invoice`, joten tätä varten on metodi `YpdateInvoice(Invoice invoice)` joka siirtää muutokset.
+
+```cs
+public class InvoiceUpdateDto {
+
+    [MinLength(3)]
+    public string Title { get; set; } = "";
+
+    public int? ClientId { get; set; }
+    public List<InvoiceRowDto> InvoiceRows { get; set; } = new List<InvoiceRowDto>();
+
+    public Invoice UpdateInvoice(Invoice invoice) {
+        // Tässä kannattaisi käyttää AutoMapper kirjastoa eikä kirjoittaa näitä käsin
+        invoice.Title = Title;
+        invoice.ClientId = ClientId;
+        
+        // Korvaa laskurivit uusilla
+        var oldRows = invoice.InvoiceRows;
+        invoice.InvoiceRows = InvoiceRows.Select((updatedRowDto, i) => {
+            var invoiceRow = 
+                oldRows.Where(f => f.Id == updatedRowDto.Id).FirstOrDefault()
+                ?? new InvoiceRow() {
+                    Invoice = invoice
+                };
+            invoiceRow.Sort = i;
+            return updatedRowDto.UpdateInvoiceRow(invoiceRow);
+        }).ToList();
+
+        return invoice;
+    }
+}
+```
+
+#### InvoicesController.cs - DTO:n käyttö
+
+Tarkoitus on siis määritellä Dto-luokkien avulla palautus ja sisäänottorajapinta, esimerkkinä tässä on laskuohjaimen `Get()` ja `Update()` actionit.
+
+Tässä näkyy myös esimerkkinä kuinka `InvoiceService` tulee automaattisesti luontifunktiossa sisään koska se on rekisteröity riippuvuudeksi.
+
+```cs
+[Route("[controller]")]
+public class InvoicesController
+{
+    private readonly InvoiceService invoiceService;
+    private readonly ClientService clientService;
+
+    public InvoicesController(InvoiceService invoiceService, ClientService clientService)
+    {
+        this.invoiceService = invoiceService;
+        this.clientService = clientService;
+    }
+
+    [HttpGet("{id}")] 
+    public async Task<InvoiceDto> Get(int id) {
+        // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
+        // haetaan käyttäjän tiedoista
+        var businessId = 1;
+        var invoice = await invoiceService.GetByBusiness(businessId, id);
+        return InvoiceDto.FromInvoice(invoice);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<InvoiceDto> Update(
+        int id, 
+        [FromBody] InvoiceUpdateDto updateInvoiceDto)
+    {
+        // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
+        // haetaan käyttäjän tiedoista
+        var businessId = 1;
+        var invoice = await invoiceService.GetByBusiness(businessId, id);
+
+        // Tästä puuttuu oikeustarkistus että client Id on tämän yrityksen
+        // asiakkaan ID. Sekä tarkistus että laskurivien ID:t eivät vaihdu
+        // laskulta toiselle. Oikeustarkistukset tehdään seuraavassa
+        // esimerkissä
+
+        // Päivitä laskua dtosta
+        updateInvoiceDto.UpdateInvoice(invoice);
+        await invoiceService.Update(invoice);
+
+        // Palauta päivitetty lasku, kierretään tietokannan kautta jotta
+        // data päivittyy oikein
+        return InvoiceDto.FromInvoice(
+            await invoiceService.GetByBusiness(businessId, id)
+        );
+    }
+}
+```
 
 ## MVC pääkirjasto
 
