@@ -1210,11 +1210,20 @@ public class InvoicesController
 }
 ```
 
-## MVC pääkirjasto
+## Kirjautumisesimerkki - Identity Core käyttäjä- ja roolienhallintakirjasto
 
-Middlewaret, Filtterit
+Microsoftin tekemä Identity Core kirjasto on kokoelma käyttäjä- ja roolienhallintaan tarpeellisia palasia. Tämä kirjasto ei kuitenkaan sisällä toteutusta rajapintatasolla, vaan tarjoaa puitteet toteuttaa oma rajapinta. Rajapintamäärittely sekä tarkempi toiminnallisuus, kuten resetointi salasanojen lähettäminen ym. jää jokaisen ohjelman rakennettavaksi.
 
-## Identity Core käyttäjä- ja roolienhallintakirjasto
+Kirjautumisrajapinnalla, eli sillä osalle joka kysyy salasanan ja käyttäjänimen, käytän OpenId Connect standardin Resource Password Flow menetelmää. Tämä on OpenId Connectin helpoin, mutta vajavainen tapa toteuttaa kirjautumisrajapinta. OpenId Connect sisältää myös muita menetelmiä kuten Implicit flow joka on suositeltu tapa, mutta samalla harvinaisen monimutkainen eikä sovellu esimerkiksi.
+
+Open Id:lle on valmis toteutus [IdentityServer4](https://identityserver.io/), joka ei ole Microsoftin tekemä, mutta Microsoftin ja .NET Foundationin tukema kirjasto jolla voidaan toteuttaa OpenId Connect hyvin yksinkertaisesti ASP.NET Coressa.
+
+### IdentityServer4 asentaminen
+
+IdentityServer4 asennetaan 
+
+### Identity
+
 
 ## Rajapinta SDK:n generointi MVC:n ApiExplorer kirjastolla
 
