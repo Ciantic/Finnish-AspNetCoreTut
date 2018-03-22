@@ -12,5 +12,8 @@ namespace Esimerkki4.Kirjautuminen.Models
         // säilyttää jotta ei tule päänsärkyä Identity kirjaston kanssa
         // yhteensopivuudesta, kaikkia propertyjä ei ole pakko käyttää omassa
         // toteutuksessa
+
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
     }
 }

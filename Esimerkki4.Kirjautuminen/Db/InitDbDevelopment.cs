@@ -25,68 +25,6 @@ namespace Esimerkki4.Kirjautuminen.Db
             await appDbContext.Database.EnsureCreatedAsync();
         }
 
-        private async Task CreateTestData() {
-            // Luo testidata development tilalle
-
-            var acmeUser =  new ApplicationUser() {
-                Email = "testi@example.com",
-                UserName = "testi@example.com",
-                PasswordHash = passwordHasher.HashPassword(null, "!Pass1")
-            };
-
-            var acmeBusiness = new Business() {
-                Title = "Acme Inc",
-                OwnerApplicationUser = acmeUser,
-            };
-
-            var clients = new List<Client>() {
-                new Client() {
-                    Business = acmeBusiness,
-                    Name = "Kukkaismyynti Oy",
-                    Address = "Kukkaiskuja 3",
-                    City = "Jyväskylä",
-                    PostCode = "40100",
-                    Email = "kukkaismyynti@example.com",
-                    PhoneNumber = "+3585012341234"
-                },
-                new Client() {
-                    Business = acmeBusiness,
-                    Name = "Kynäkauppiaat Ry",
-                    Address = "Kynäkatu 123",
-                    City = "Helsinki",
-                    PostCode = "00100",
-                    Email = "kynakauppias@example.com",
-                    PhoneNumber = "+3585043214321"
-                }
-            };
-
-            var invoices = new List<Invoice>() {
-                new Invoice() {
-                    Business = acmeBusiness, 
-                    Client = clients[0],
-                    Title = "Lasku ruusupuskista",
-                    InvoiceRows = new List<InvoiceRow>() {
-                        new InvoiceRow() {
-                            Amount = 15.0M,
-                            Created = DateTime.Now,
-                            Modified = DateTime.Now,
-                            Name = "Ruuspuskan siemenet",
-                            Quantity = 123
-                        }
-                    },
-                    Modified = DateTime.Now,
-                    Created = DateTime.Now,
-                    Sent = null,
-                }
-            };
-
-            appDbContext.Business.Add(acmeBusiness);
-            appDbContext.Client.AddRange(clients);
-            appDbContext.Invoice.AddRange(invoices);
-            
-            await appDbContext.SaveChangesAsync();
-        }
-
         private static Dictionary<String, int> usedEmails = new Dictionary<string, int>();        
 
         private string GenerateUniqueEmail(string prefix, string domain = "example.com") {
@@ -227,7 +165,12 @@ namespace Esimerkki4.Kirjautuminen.Db
             return new ApplicationUser() {
                 Email = email,
                 UserName = email,
-                PasswordHash = passwordHasher.HashPassword(null, "!Pass1")
+                PasswordHash = passwordHasher.HashPassword(null, "!Pass1"),
+                NormalizedEmail = email.ToUpper(),
+                NormalizedUserName = email.ToUpper(),
+                ConcurrencyStamp = Guid.NewGuid().ToString(),
+                SecurityStamp = Guid.NewGuid().ToString(),
+                EmailConfirmed = true,
             };
         }
 
@@ -337,7 +280,6 @@ namespace Esimerkki4.Kirjautuminen.Db
         {
             await CreateTestDatabase();
             await CreateTestDataByGeneration();
-            await CreateTestData();
         }
     }
 }

@@ -66,13 +66,16 @@ namespace Esimerkki2.Tietokanta
             // AppDbContextin voi luoda vain scopen sisällä, joten ensin luodaan scope
             using (var scoped = app.ApplicationServices.CreateScope()) {
                 var dbContext = scoped.ServiceProvider.GetRequiredService<AppDbContext>();
+                var passHasher = scoped.ServiceProvider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
 
                 // Configure on synkroninen, joten tässä pitää odotella
-                CreateTestData(dbContext).GetAwaiter().GetResult();
+                CreateTestData(dbContext, passHasher).GetAwaiter().GetResult();
             }
         }
 
-        private async Task CreateTestData(AppDbContext appDbContext) {
+        private async Task CreateTestData(AppDbContext appDbContext, 
+            IPasswordHasher<ApplicationUser> passwordHasher)
+        {
             // Tuhoaa ja poistaa tietokannan joka kerta
             await appDbContext.Database.EnsureDeletedAsync();
             await appDbContext.Database.EnsureCreatedAsync();
@@ -80,8 +83,14 @@ namespace Esimerkki2.Tietokanta
             // Luo testidata development tilalle
 
             var acmeUser =  new ApplicationUser() {
-                Email = "testi@example.com",
-                UserName = "testi@example.com",
+                Email = "business@example.com",
+                UserName = "business@example.com",
+                PasswordHash = passwordHasher.HashPassword(null, "!Pass1"),
+                NormalizedEmail = "business@example.com".ToUpper(),
+                NormalizedUserName = "business@example.com".ToUpper(),
+                ConcurrencyStamp = Guid.NewGuid().ToString(),
+                SecurityStamp = Guid.NewGuid().ToString(),
+                EmailConfirmed = true,
             };
 
             var acmeBusiness = new Business() {

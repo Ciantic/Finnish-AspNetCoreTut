@@ -14,6 +14,14 @@ Asennan myös ohjelmaan [Swagger REST-rajapintatesterin](https://swagger.io/).
 
 Seuraavissa kohdissa esimerkkinä rakennettu ohjelma toimii kaikilla .NET Core ympäristöillä.
 
+Tämä dokumentti koostuu viiden esimerkin pohjalle:
+
+* Esimerkki1.Swagger / [Esimerkkiohjelma](Esimerkki1.Swagger/)
+* Esimerkki2.Tietokanta / [Esimerkkiohjelma](Esimerkki2.Tietokanta/)
+* Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](Esimerkki3.Tietokanta2/)
+* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/) (kesken)
+* Esimerkki5.SDK / Esimerkkiohjelma (kesken)
+
 ## Asennus ja perusteita rajapinnan määrittelemiseksi
 
 Asenna ensin .NET Core omalle koneelle: [Windows](https://www.microsoft.com/net/learn/get-started/windows), [Linux](https://www.microsoft.com/net/learn/get-started/linuxredhat) tai [MacOS](https://www.microsoft.com/net/learn/get-started/macos)
@@ -40,7 +48,9 @@ Now listening on: http://localhost:5000
 Application started. Press Ctrl+C to shut down.
 ```
 
-**Huomio!** Aseta ympäristömuuttuja `ASPNETCORE_ENVIRONMENT=Development` jotta dotnet käynnistyy development tilassa ja aja komento uudestaan. Ohjelman käynnistyessä pitäisi näkyä `Hosting environment: Development` kun ohjelma ajetaan development tilassa. Ympäristömuuttuja kannattaa asettaa globaalisti, yleensä vasta tuotannossa jätetään tämä pois.
+**Huomio!** Aseta ympäristömuuttuja `ASPNETCORE_ENVIRONMENT=Development` jotta dotnet käynnistyy development tilassa ja aja komento uudestaan. 
+
+Ohjelman käynnistyessä pitäisi näkyä `Hosting environment: Development` kun ohjelma ajetaan development tilassa. Ympäristömuuttuja kannattaa asettaa globaalisti, yleensä vasta tuotannossa jätetään tämä pois.
 
 Voit nyt navigoida selaimella suoraan osoitteeseen: [http://localhost:5000/api/Values/](http://localhost:5000/api/Values/), portti saattaa vaihdella, sivun pitäisi näyttää JSON arvo `["value1","value2"]`.
 
@@ -396,7 +406,7 @@ namespace Esimerkki2.Tietokanta.Models
 }
 ```
 
-Tietokantamalli luodaan siis tekemällä normaaleja luokkia, EF Core luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja auto increment, viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään, näistä tulee `foreign key`. Konventioihin voi vaikutaa `DbContext` luokalla.
+Tietokantamalli luodaan siis tekemällä normaaleja luokkia. EF Core luo näistä tietyin konventioin tietokantataulut. `Int` tyyppinen `Id` kenttä on `primary key` ja auto increment. Viittauskentät toisiin tauluihin on nimetty `ToinenLuokkaId` eli luokannimi johon viitataan ja Id perään, näistä tulee `foreign key`. Konventioihin voi vaikutaa `DbContext` luokalla.
 
 ### AppDbContext.cs - tietokannan käsittelyluokka
 
@@ -453,9 +463,10 @@ Tietokanta täytyy luoda koska sitä ei ole vielä luotu, sitä varten listää�
 // AppDbContextin voi luoda vain scopen sisällä, joten ensin luodaan scope
 using (var scoped = app.ApplicationServices.CreateScope()) {
     var dbContext = scoped.ServiceProvider.GetRequiredService<AppDbContext>();
-
+    var passHasher = scoped.ServiceProvider.GetRequiredService<IPasswordHasher<ApplicationUser>>();
+    
     // Configure on synkroninen, joten tässä pitää odotella
-    CreateTestData(dbContext).GetAwaiter().GetResult();
+    CreateTestData(dbContext, passHasher).GetAwaiter().GetResult();
 }
 ```
 
@@ -463,15 +474,24 @@ Luodaan nyt myös testidataa ja tietokanta, tässä esimerkissä tietokanta luod
 
 ```cs
 
-private async Task CreateTestData(AppDbContext appDbContext) {
+private async Task CreateTestData(AppDbContext appDbContext, 
+    IPasswordHasher<ApplicationUser> passwordHasher)
+{
     // Tuhoaa ja poistaa tietokannan joka kerta
     await appDbContext.Database.EnsureDeletedAsync();
     await appDbContext.Database.EnsureCreatedAsync();
 
-    // Luo testidata development tilalle
+    // Luo testidata development tilalle ...
+
     var acmeUser =  new ApplicationUser() {
-        Email = "testi@example.com",
-        UserName = "testi@example.com",
+        Email = "business@example.com",
+        UserName = "business@example.com",
+        PasswordHash = passwordHasher.HashPassword(null, "!Pass1"), // Testi käyttäjän salasana
+        NormalizedEmail = "business@example.com".ToUpper(),
+        NormalizedUserName = "business@example.com".ToUpper(),
+        ConcurrencyStamp = Guid.NewGuid().ToString(),
+        SecurityStamp = Guid.NewGuid().ToString(),
+        EmailConfirmed = true,
     };
 
     var acmeBusiness = new Business() {
@@ -771,9 +791,9 @@ Middlewaret ovat HTTP kyselyä ennen tai jälkeen ajettavia koodin pätkiä. Esi
 
 Edellisessä esimerkissä jos laskua ei löytynyt palautettiin null, tämä ei ole kovinkaan hyvä tapa. Parempi on määritellä omalle rajapinnalle selkeä ja yksiselitteinen tapa palauttaa virheet.
 
-### NotFoundException middleware, virheenkäsittelyn esimerkkifiltteri
+### Virheenkäsittelyn esimerkkifiltteri
 
-Oletetaan että tietokanta heittää virheen `NotFoundException` ja halutaan että tällöin HTTP vastaus on aina `404` ja palautteena oleva JSON on `{ error: "NOT_FOUND" }` se voitaisiin toteuttaa näin:
+Oletetaan että tietokanta heittää virheen `NotFoundException` ja halutaan että tällöin HTTP vastaus on aina `404` ja palautteena oleva JSON on `{ error: "NOT_FOUND" }` se voitaisiin toteuttaa seuraavalla tavalla:
 
 ```cs
 using System;
@@ -789,19 +809,71 @@ namespace Esimerkki3.Tietokanta2.Mvc
         {
             if (context.Exception is NotFoundException)
             {
-                // Tämä ei ole tyyppiturvallista, mutta yksinkertaisin tapa palauttaa JSON result
+                // Tämä ei ole tyyppiturvallista, mutta yksinkertaisin tapa 
+                // palauttaa JSON result
                 context.Result = new JsonResult(new {
                     error = "NOT_FOUND"
                 });
                 context.Exception = null; // Nollaa virhe
                 context.ExceptionHandled = true; // Virhe käsitelty
-            }
 
             // Voit käsitellä tässä filtterissä muitakin exceptioneita...
+            // Esim oma tekemiäsi virheitä, alla lista yksinkertaisista 
+            // omista exceptioneista
+            } else if (context.Exception is ApiError)
+            {
+                context.Result = (context.Exception as ApiError).GetResult();
+                context.Exception = null;
+                context.ExceptionHandled = true;
+            }
+
+        }
+    }
+
+    public class NotFound: ApiError
+    {
+        public NotFound() {
+            StatusCode = StatusCodes.Status404NotFound;
+        }
+    }
+    
+    public class NotAuthorized: ApiError
+    {
+        public NotAuthorized() {
+            StatusCode = StatusCodes.Status401Unauthorized;
+        }
+    }
+
+    public class Forbidden : ApiError
+    {
+        public Forbidden()
+        {
+            StatusCode = StatusCodes.Status403Forbidden;
+        }
+    }
+
+    // Omien virheiden yläluokka
+    abstract public class ApiError : Exception
+    {
+        public int? StatusCode { get; set; }
+
+        virtual public IActionResult GetResult()
+        {
+            return new ObjectResult(new ErrorValue<object>()
+            {
+                // Ottaa tyypin nimen virheobjektiin, esim "Forbidden" tai "NotFound"
+                Error = GetType().Name, 
+                Data = null
+            })
+            {
+                StatusCode = StatusCode
+            };
         }
     }
 }
 ```
+
+Yllä olevassa esimerkissä on myös määritelty muutama oma virhe, esimerkkinä.
 
 Filtterin voi rekisteröidä millä tahansa tasolla, globaalisti, tai tietylle ohjaimelle tai käsittelijälle. Tässä ohjelmassa on kätevintä käsitellä kaikkiaalta nousevat NotFoundExceptionit joten se rekisteröidään globaalisti näin, avaa **Startup.cs**:
 
@@ -819,7 +891,7 @@ public void ConfigureServices(IServiceCollection services)
 
 ### Validointi middleware
 
-On hieman työlästä kirjoittaa `if (!ModelState.IsValid) { ... }` jokaiseen actioniin, joten sille kannattaa myös tehdä globaalisti rekisteörity middleware. Tällöi validointi ja siitä tuleva virheviesti toteutetaan yhtenevästi koko rajapinnalle. ASP.NET Core 2.1 (ei vielä julkaistu) tämä [on toteutettu jo valmiiksi](https://blogs.msdn.microsoft.com/webdev/2018/02/27/asp-net-core-2-1-web-apis/).
+On hieman työlästä kirjoittaa `if (!ModelState.IsValid) { ... }` jokaiseen käsittelijään, joten sille kannattaa myös tehdä globaalisti rekisteröity middleware. Tällöin validointi ja siitä nouseva virheviesti toteutetaan yhtenevästi koko rajapinnalle. ASP.NET Core 2.1 (ei vielä julkaistu) tämä [on toteutettu jo valmiiksi](https://blogs.msdn.microsoft.com/webdev/2018/02/27/asp-net-core-2-1-web-apis/).
 
 ```cs
 using System;
@@ -844,28 +916,31 @@ namespace Esimerkki3.Tietokanta2.Mvc
 }
 ```
 
-Sekä rekisteröinti koko ohjelmalle:
+Tämä filtteri rekisteröidään koko ohjelman laajuisesti `AddMvc` käskyä konfiguroimalla **Startup.cs** tiedostossa näin:
 
 
 ```cs
 public void ConfigureServices(IServiceCollection services)
 {    
-    // ...
+    // ...muut asetuksesi
+
+    // AddMvc metodille pitää antaa konfigurointi lambda
     services.AddMvc(o => {
         o.Filters.Add(new ApiErrorFilter()); // Tämä lisätään tänne 
         o.Filters.Add(new ModelStateValidationFilter()); // Tämä lisätään tänne 
     });
-    // ...
+
+    // ... muut asetuksesi
 }
 ```
 
-Tämän jälkeen validointia ei tarvitse suorittaa enää itse actionissa vaan se tehdään automaattisesti ennenkö actioniin edes päästään.
 
-Rekisteröinnit voi suorittaa myös ohjain tai käisttelijä kohtaisesti, esimerkiksi:
+Rekisteröinnit voi suorittaa myös ohjain tai käisttelijä kohtaisesti, jos ei jostain syystä halua jotain filtteriä koko ohjelmalle. Esimerkiksi, ne voi rekisteröidä ohjain tai käsittelijäkohtaisesti:
 
 ```cs
 [ModelStateValidation] // <-- tämä rekisteröi filterin vain tälle ohjaimelle
 public class ClientsController : Controller {
+
     [ModelStateValidation] // <-- tämä rekisteröisi filterin vain tälle actionille
     public async Task<object> Create([FromBody] CreateClientDto createClientDto) {
         // ...
@@ -885,7 +960,7 @@ Tarkoitus on jakaa ohjelma selkeisiin osiin haasteiden eriyttämisellä (separat
 
 `Controller <-> Service <-> Store`
 
-Tämä esimerkki esittelee miten ohjelma alkaisi rakentumaan, ja alle otettuihin esimerkkeihin on otettu pala uusista osista, loput osat voi tarkastella ohjelmakoodeista, ne ovat samojen esimerkkien toistamista suurilta osin. Esimerkissä on paljon muitakin pieniä parannuksia joita en esittele tässä dokumentissä, esimerkiksi testidata generoidaan tietokantaan, tai tietokantayhteysasetukset haetaan asetustiedostosta. Näitä kannattaa katsoa esimerkkikoodeista.
+Tämä esimerkki esittelee miten ohjelma alkaisi rakentumaan. Tähän on otettu vain esimerkki kustakin tasosta, loput osat voi tarkastella ohjelmakoodeista. Muut osat ovat samojen esimerkkien toistamista suurilta osin. Esimerkin ohjelmakoodeissa on paljon muitakin pieniä parannuksia, joita en esittele tässä dokumentissä, esim. testidata generoidaan tietokantaan, tai tietokantayhteysasetukset haetaan asetustiedostosta. Näitä kannattaa katsoa esimerkkikoodeista.
 
 ### Repository pattern (Stores)
 
@@ -1083,6 +1158,8 @@ Koska malliolioita ei saa päästää rajapinnalle, niitä varten luodaan Dto-lu
 
 Dto luokat täytyy myös pystyä muuttamaan takaisin malleiksi, ja malleista takaisin Dto luokiksi. Tätä varten voi käyttää [AutoMapper](http://automapper.org/) kirjastoa, mutta tässä esimerkissä en käytä mitään kirjastoa vaan kirjotan vastineet käsin.
 
+Kielissä joissa tyyppiturvallisuus voidaan taata esimerkiksi tyyppi-inferenssillä, DTO luokkaa ei tarvitsisi toteuttaa vaan voisi tehdä pelkän transformaatiofunktion. Funktio palauttaisi vahvastityypitetyn anonyymin recordin, tai validointivirheen.
+
 #### InvoiceDto.cs - Laskun palauttava DTO
 
 Rajapinnasta ulos tuleva luokka joka määrittelee näkyvät kentät. Malliolio `Invoice` täytyy pystyä muuntamaan palautettavaksi luokaksi joten tähän on tehty staattinen rakentaja `FromInvoice()` joka luo `InvoiceDto`:n mallioliosta.
@@ -1210,20 +1287,512 @@ public class InvoicesController
 }
 ```
 
+[Voit myös tarkastella tämän esimerkin ohjelmakoodeja: Esimerkki3.Tietokanta2](Esimerkki3.Tietokanta2/)
+
 ## Kirjautumisesimerkki - Identity Core käyttäjä- ja roolienhallintakirjasto
 
-Microsoftin tekemä Identity Core kirjasto on kokoelma käyttäjä- ja roolienhallintaan tarpeellisia palasia. Tämä kirjasto ei kuitenkaan sisällä toteutusta rajapintatasolla, vaan tarjoaa puitteet toteuttaa oma rajapinta. Rajapintamäärittely sekä tarkempi toiminnallisuus, kuten resetointi salasanojen lähettäminen ym. jää jokaisen ohjelman rakennettavaksi.
+Microsoftin tekemä Identity Core kirjasto on kokoelma käyttäjä- ja roolienhallintaan tarpeellisia palasia. Tämä kirjasto ei kuitenkaan sisällä toteutusta rajapintatasolla, vaan tarjoaa puitteet toteuttaa oma rajapinta. Rajapintamäärittely sekä tarkempi toiminnallisuus, kuten käyttäjän ja salasanan kysyminen, salasanan resetointi sähköpostien lähettäminen ym. jää jokaisen ohjelman rakennettavaksi.
 
-Kirjautumisrajapinnalla, eli sillä osalle joka kysyy salasanan ja käyttäjänimen, käytän OpenId Connect standardin Resource Password Flow menetelmää. Tämä on OpenId Connectin helpoin, mutta vajavainen tapa toteuttaa kirjautumisrajapinta. OpenId Connect sisältää myös muita menetelmiä kuten Implicit flow joka on suositeltu tapa, mutta samalla harvinaisen monimutkainen eikä sovellu esimerkiksi.
+Kirjautumisrajapinnalla, eli sillä osalle joka kysyy salasanan ja käyttäjänimen, käytän OpenId Connect standardin [Resource Owner Password Flow menetelmää](http://docs.identityserver.io/en/release/quickstarts/2_resource_owner_passwords.html?highlight=resource%20owner). Tämä on OAuth2.0 helpoin, mutta vajavainen tapa toteuttaa kirjautumisrajapinta. Käytännössä tässä esimerkissä käytetään vain OAuth2.0 osaa OpenId Connect standardista. OpenId Connect sisältää myös muita menetelmiä kuten Implicit flow joka on suositeltu tapa, mutta samalla harvinaisen monimutkainen eikä sovellu esimerkiksi.
 
-Open Id:lle on valmis toteutus [IdentityServer4](https://identityserver.io/), joka ei ole Microsoftin tekemä, mutta Microsoftin ja .NET Foundationin tukema kirjasto jolla voidaan toteuttaa OpenId Connect hyvin yksinkertaisesti ASP.NET Coressa.
+Open Id:lle on valmis kirjasto [IdentityServer4](https://identityserver.io/), joka ei ole Microsoftin tekemä, mutta Microsoftin ja .NET Foundationin tukema kirjasto, jolla voidaan toteuttaa OpenId Connect hyvin yksinkertaisesti ASP.NET Coressa. IdentityServer4 ei ole iso riippuvuus, vaikka sitä voi käyttää myös omana palvelimena. Monesti isommissa ohjelmistoissa on oma palvelin joka luo tokenit keskitetysti, ja näitä pelkästään tarkistetaan API:n rajapinnalla. 
 
-### IdentityServer4 asentaminen
-
-IdentityServer4 asennetaan 
-
-### Identity
+Tässä esimerkissä tokenien luonti ja tarkistaminen on molemmat samassa ohjelmassa jotta esimerkkiä on helppo käyttää.
 
 
-## Rajapinta SDK:n generointi MVC:n ApiExplorer kirjastolla
+### Identity Coren ja IdentityServer4 asentaminen
+
+Asenna ensin IdentityServer4 riippuvuus:
+
+```bash
+dotnet add . package IdentityServer4.AspNetIdentity
+dotnet add . package IdentityServer4.AccessTokenValidation
+```
+
+Riippuvuuksista kannattaa huomata, että `AccessTokenValidation` eli tokenien validointi on API:n riippuvuus, mutta `AspNetIdentity` on tokenien luonnin riippuvuus. Nämä voisi asentaa eri ohjelmiin ja ne silti toimisivat keskenään.
+
+Identity Coren `ApplicationUser` ja `ApplicationRole` luokkia ei rekisteröity tietokannalle aikasemmassa esimerkissä. Tätä varten muuta aikasemman esimerkin `AppDbContext` periytymään `IdentityDbContext` luokasta:
+
+```cs
+public class AppDbContext : IdentityDbContext<
+    ApplicationUser, ApplicationRole, int
+> 
+{
+    // ... aikasemmat esimerkit
+}
+```
+
+Seuraavaksi konfiguroidaan Identity Core sekä IdentityServer4, muokkaa **Startup.cs** tiedostoa ja sen `ConfigureServices()` metodia:
+
+```cs
+public void ConfigureServices(IServiceCollection services)
+{
+    // Autentikaation asetuksia, liittyvät JWT tokenin tarkistamiseen
+    services
+        .AddAuthentication(o =>
+        {
+            // Nämä vaaditaan koska .NET Core 2 ohjaa oletuksena
+            // kirjautumisdialogiin, jota REST rajapinnoissa ei ole
+            o.DefaultScheme =
+                o.DefaultAuthenticateScheme =
+                o.DefaultForbidScheme =
+                o.DefaultChallengeScheme =
+                o.DefaultSignInScheme =
+                o.DefaultSignOutScheme =
+                IdentityServerAuthenticationDefaults.AuthenticationScheme;
+        })
+        .AddIdentityServerAuthentication(options => // IdentityServer4
+        {
+            options.Authority = "http://localhost:5000";
+            options.RequireHttpsMetadata = false;
+            options.ApiName = "minunapi";
+        });
+        
+    // Identity coren rekisteröinti
+    services.AddIdentity<ApplicationUser, ApplicationRole>()
+        .AddEntityFrameworkStores<AppDbContext>()
+        .AddDefaultTokenProviders();
+
+    // Nämä ovat Identity serverin konfiguraatiota, eli sen palan joka luo JWT tokeneita
+    services.AddIdentityServer()
+        .AddDeveloperSigningCredential() // Tämä luo `tempkey.rsa` tiedoston
+        .AddInMemoryPersistedGrants()
+        .AddInMemoryApiResources(new List<IdentityServer4.Models.ApiResource>() {
+            new IdentityServer4.Models.ApiResource("minunapi", "Tämä ohjelma")
+        })
+        .AddInMemoryClients(new List<IdentityServer4.Models.Client>() {
+            // Open ID Perustuu asiakasohjelmiin, eli jokainen
+            // käyttöliittymä rekisteröidään API:lle. Esimerkiksi
+            // mobiilisovelluksella olisi oma client ja websovelluksella
+            // omansa.
+            new IdentityServer4.Models.Client() {
+                ClientId = "esimerkkiohjelma",
+                AllowedGrantTypes = GrantTypes.ResourceOwnerPassword,
+                AllowOfflineAccess = true,
+                ClientSecrets = {
+                    // JavaScript sovelluksen client secret ei ole kovin
+                    // tärkeä sillä se näkyy JavaScript ohjelman
+                    // lähdekoodeissa, se vuotaa joka tapauksessa.
+                    new Secret("secret".Sha256()) 
+                },
+                AllowedScopes = { "minunapi" }
+            }
+        }).AddAspNetIdentity<ApplicationUser>();
+
+    // ... muut asetuksesi jatkuvat tässä kohti
+}    
+```
+
+Lisää tämän jälkeen autentikointi sekä identityserver4 middlewaret ohjelmaasi, muokkaa samoin **Startup.cs** tiedostoa mutta `Configure()` metodia:
+
+```cs
+public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+{
+    app.UseAuthentication(); // Identity coren asetus
+    app.UseIdentityServer(); // IdentityServer4 asetus
+    // Nämä molemmat tulevat ennen UseMvc() kohtaa!
+
+    // muut asetuksesi jatkuvat tässä kohti, kuten UseMvc() ...
+}
+```
+
+Asetuksissa toistuu joitakin vakioita, kuten "minunapi" joka on sinun API:lle määräämä scope. Scopeilla voidaan luoda useita oikeutettuja rajapintoja, esimerkiksi hallintakäyttöliittymällä voisi olla oma scope ja raporttirajapinnalla omansa. Asetuksissa pyörii myös yhdistysosoite, tämä kannattaa siirtää asetustiedostoon jotta se on helposti vaihettavissa.
+
+### Testaa kirjautumista, JWT tokenin luomista ja tarkistamista
+
+Tarkista, että ohjelma käynnistyy `dotnet run`, sekä navigoimalla [http://localhost:5000/.well-known/openid-configuration](http://localhost:5000/.well-known/openid-configuration) tämän osoitteen pitäisi aukaista JSON tuloste jossa on OpenId:seen liittyviä asetuksia. Käyttöliittymät tunnistavat palvelimesi käyttävän OpenId standardia tämän JSON dokumentin perustella. Tässä dokumentissa olevat authorization sekä token osoitteet pitää antaa myös Swaggerille jotta sekin osaa kirjautua järjestelmään.
+
+Koeta että kirjautuminen palauttaa JWT tokenin käyttäen curlia, huomaa käyttäjänimi ja salasana seuraavassa kutsussa:
+
+```bash
+curl 'http://localhost:5000/connect/token' --data 'username=business%40example.com&password=!Pass1&scope=minunapi&grant_type=password&client_id=esimerkkiohjelma&client_secret=secret'
+```
+
+Vastaus pitäisi olla JWT/JSON objekti:
+
+```json
+{ 
+  "access_token":"eyJhbGciOiJSUzI1NiIsIm...",
+  "expires_in":3600,
+  "token_type":"Bearer"
+}
+```
+
+Vaikka tämä todistaa että kirjautuminen toimii, se ei takaa sitä että järjestelmä hyväksyy antamansa tokenin. Tämä täytyy testata erikseen, luodaan ensin `AccountController`, joka toistaiseksi palauttaa vain kirjautuneen tiedot. Kirjautumisen tarkistamiseen riittää `[Authorize]` attribuutti ohjaimessa. Sen voisi asettaa myös pelkästään tietylle käsittelijälle.
+
+Luokassa oleva `UserManager` on Identityn luokka jonka avulla voi toteuttu mm. käyttäjän salasanan tai sähköpostien resetointitokenien luonnin ja tarkistamisen, ja paljon muita pieniä toimenpiteitä. Tässä esimerkissä sillä haetaan `ApplicationUser` olio käyttäjän vaateista eli JWT tokenista (`ClaimsPrincipal` tyyppinen olio on tässä esimerkissä JWT tokeni). Esimerkkiohjelmakoodeissa on muutamia muita käyttöjä UserManagerille, kuten salasanan vaihto ja resetointi. Näiden kaikkien esittäminen tässä dokumentissa ei ole oleellista.
+
+```cs
+[Authorize] // <-- Huomaa tämä!
+[Route("[controller]")]
+public class AccountController : ControllerBase
+{
+    private readonly UserManager<ApplicationUser> userManager;
+
+    public AccountController(UserManager<ApplicationUser> userManager)
+    {
+        this.userManager = userManager;
+    }
+
+    public class LoggedInDto {
+        public int Id { get; set; }
+        public string Email { get; set; }
+    }
+
+    [HttpGet("[action]")]
+    public async Task<object> Claims() {
+        // Näyttää kirjautuneen käyttäjän vaateet, tämä demonstroi sitä mitä
+        // vaateet tarkoittavat. User on ClaimsPrincipal tyyppinen olio, ei
+        // siis ApplicationUser.
+        if (User == null) {
+            throw new Forbidden();
+        }
+
+        return User.Claims.Select(t => new { t.Type, t.Value }).ToList();
+    }
+
+    [HttpGet("[action]")]
+    public async Task<LoggedInDto> LoggedIn() {
+        // Näyttää kirjautuneen käyttäjän tiedot
+
+        var loggedInUser = await userManager.GetUserAsync(User);
+        if (loggedInUser == null) {
+            throw new Forbidden();
+        }
+
+        return new LoggedInDto() {
+            Id = loggedInUser.Id,
+            Email = loggedInUser.Email
+        };
+    }
+}
+```
+
+Tämän jälkeen voit koettaa access tokenia, ota saamasi token edellisestä curl kyselystä ja syötä se seuraavaan kyselyyn:
+
+```bash
+curl -H "Authorization: Bearer eyJhbGciOiJSUzI1N..." 'http://localhost:5000/Account/LoggedIn'
+```
+
+Palautusarvon pitäisi olla:
+
+```json
+{
+    "id": 1,
+    "email": "business@example.com"
+}
+```
+
+Joka kertoo että kirjautuminen ja tokenin tarkistus toimivat. Koita myös hakea vaateet osoitteesta `http://localhost:5000/Account/Claims` samalla tavalla kuin LoggedIn haettiin. Tämän jälkeen koita syöttää access token myös [JWT.io palveluun](https://jwt.io/). Vaateet ovat siis IdentityServer4:n luomia kenttiä jotka lähetetään jokaisessa HTTP kyselyssä. Vaateita kannattaa luoda ohjelmakohtaisesti sillä näillä voi nopeuttaa käyttäjän tunnistamista ilman että tarvitsee hakea käyttäjää tietokannasta joka kerta. Esimerkiksi käyttäjän yrityksen ID olisi hyvä kenttä omaksi vaateeksi.
+
+### Swaggeriin lisättävä kirjautuminen
+
+Jotta Swaggerista on jotain hyötyä rajapintatesterinä kirjautumisen vaativissa sovelluksissa, sille täytyy antaa asetus kirjautumista varten, muokkaa **Startup.cs** tiedostoa:
+
+```cs
+public void ConfigureServices(IServiceCollection services)
+{
+    // Muut rojusi...
+
+    // Tämä pitäisi olla jo täällä, sitä muokataan seuraavaksi:
+    services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
+        c.AddSecurityDefinition("oauth2", new OAuth2Scheme() {
+            Flow = "password",
+            Scopes = new Dictionary<string, string> {
+                { "minunapi", "Minun API oikeudet" }
+            },
+            TokenUrl = "http://localhost:5000/connect/token",
+            AuthorizationUrl = "http://localhost:5000/connect/authorize"
+        });
+    });
+}
+```
+
+Tämä toimii koska käytössä on OAuth2 standardin mukainen kirjautumistapa, jonka Swagger tunnistaa jos sille annetaan tieto siitä. Nyt voit koettaa kirjautumista myös Swaggerin kautta, käyttöliittymän ylänurkkaan on tullut Authorize näppäin josta voi syöttää ohjelman tarvittavat tiedot:
+
+![Swagger v1 api](swagger-authorize.png)
+
+Tämän jälkeen voit kutsua `Account/LoggedIn` endpointtia swaggeristä ja sen pitäisi palauttaa samat tiedot mitä `curl` yllä.
+
+### Oikeuksien määrittely
+
+ASP.NET Core 2:ssa on rooli, vaatimus (Claim), policy ja resurssipohjaiset [autorisointimenetelmät](https://docs.microsoft.com/en-us/aspnet/core/security/authorization/). `InvoiceController` esimerkkiä jateketaan siten, että siihen lisätään tarkistus jossa varmistetaan että käyttäjä on kirjautunut. Kirjautumisehto voidaan lisätä yksinkertaisesti `[Authorize]` attribuutilla.
+
+Tämä ei kuitenkaan vielä hae sitä sitä mikä yritys on kirjautunut järjestelmään ja onko sillä oikeuksia tiettyyn resurssiin. Samalla attribuutilla voi määritellä policy perusteisia sääntöjä kuten käyttäjällä on muokkausoikeudet `[Authorize("EditPolicy")]`, tai vaade perusteisia esim. käyttäjä on vähintään 21 vuotta vanha `[Authorize("IsAtLeast21")]`. Authorize attribuutilla ei voi kuitenkaan antaa resurssipohjaisia ehtoja kuten saako käyttäjä muokata tiettyä laskua.
+
+Resurssipohjaiset tarkistukset on hieman hankalalla tavalla toteutettu, jokainen vaatii oman luokan ja tarkistaminen tapahtuu oliolla joka ei ole tyyppiturvallinen. Esitän tässä suoraviivaisemman tavan toteuttaa resurssipohjainen tarkistus. Käytännössähän resurssipohjaisessa tarkistamisessa riittää saada käyttäjän vaatimukset (`ClaimsPrincipal`) ja tarkistaa onko käyttäjällä esimerkiksi oikeus laskun muokkaamiseen tai tuhoamiseen laskun ID:n perusteella.
+
+#### InvoicesAuthorize.cs
+
+Laskuja varten tässä esitellän esimerkkinä kaikki tarkistukset jokaiselle toiminnolle. Esimerkkikoodeissa on myös Authorize luokat `BusinessAuthorize` ja `ClientsAuthorize`, ne ovat vastaavasti yksinkertaisia luokkia jotka tarkistavat käyttäjän tiedoista oikeudet.
+
+```cs
+public class InvoicesAuthorize
+{
+    private readonly BusinessAuthorize businessAuthorize;
+    private readonly InvoiceStore invoiceStore;
+    private readonly ClientsAuthorize clientsAuthorize;
+
+    public InvoicesAuthorize(BusinessAuthorize businessAuthorize, 
+        InvoiceStore invoiceStore, ClientsAuthorize clientsAuthorize)
+    {
+        this.businessAuthorize = businessAuthorize;
+        this.invoiceStore = invoiceStore;
+        this.clientsAuthorize = clientsAuthorize;
+    }
+
+    public async Task<bool> CanUpdateInvoice(ClaimsPrincipal claims, int id, 
+        InvoiceUpdateDto invoiceUpdateDto)
+    {
+        var businessId = await businessAuthorize.GetBusinessId(claims);
+
+        // Tarkista että laskun omistaa oikea käyttäjä
+        if (!await invoiceStore.OwnedByBusiness(businessId, id)) {
+            return false;
+        }
+
+        // Tarkista että olemassaolevien laskurivien ID:t kuuluvat laskulle
+        if (!await invoiceStore.InvoiceRowsBelongToInvoice(id,
+            invoiceUpdateDto.InvoiceRows
+                .Where(t => t.Id != null)
+                .Select(t => t.Id)
+                .Cast<int>()))
+        {
+            return false;
+        }
+
+        // Tarkista että asiakkaan ID on yrityksen asiakkaan ID
+        if (invoiceUpdateDto.ClientId != null && 
+            !await clientsAuthorize.CanReadClient(claims, (int) invoiceUpdateDto.ClientId))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public async Task<bool> CanDeleteInvoice(ClaimsPrincipal claims, int id) {
+        return await IsInvoiceOwner(claims, id);
+    }
+
+    public async Task<bool> CanCreateInvoice(ClaimsPrincipal claims) {
+        return await businessAuthorize.IsBusinessOwner(claims);
+    }
+
+    public async Task<bool> CanReadInvoice(ClaimsPrincipal claims, int id) {
+        return await IsInvoiceOwner(claims, id);
+    }
+
+    public async Task<bool> CanListInvoices(ClaimsPrincipal claims) {
+        return await businessAuthorize.IsBusinessOwner(claims);
+    }
+
+    public async Task<bool> CanSendInvoice(ClaimsPrincipal claims, int id) {
+        return await IsInvoiceOwner(claims, id);
+    }
+
+    private async Task<bool> IsInvoiceOwner(ClaimsPrincipal claims, int id) {
+        var businessId = await businessAuthorize.GetBusinessId(claims);
+
+        // Tarkista että olet laskun omistaja
+        if (!await invoiceStore.OwnedByBusiness(businessId, id)) {
+            return false;
+        }
+
+        return true;
+    }
+}
+```
+
+Lisäksi InvoicesAuthorize täytyy rekisteröidä **Startup.cs** tiedostossa riippuvuusinjektiolle. Kannattaa käyttää transienttia rekisteröintiä.
+
+#### InvoicesController.cs
+
+`InvoicesController` vaatii lisäksi käsittelijöissä yrityksen tunnistamista varten kirjautuneen käyttäjän yritysolion. Sen voisi tehdä samaan tapaan kuin `LoggedIn` esimerkissä, eli hakemalla ensin käyttäjän ja sitten tästä yrityksen olion, mutta tämä on turhan työlästä jokaisessa actionissa. Tätät varten alla olevassa esimerkissä käytetty omaa `[RequestBusiness]` attribuuttiia jonka toteutus on tämän jälkeen.
+
+
+```cs
+[Authorize] // <-- Tämä attribuutti varmistaa että käyttäjä on kirjautunut
+[Route("[controller]")]
+public class InvoicesController : ControllerBase
+{
+    private readonly InvoiceService invoiceService;
+    private readonly InvoiceAuthorize invoiceAuthorize;
+
+    public InvoicesController(InvoiceService invoiceService,
+        InvoiceAuthorize invoiceAuthorize)
+    {
+        this.invoiceService = invoiceService;
+        this.invoiceAuthorize = invoiceAuthorize;
+    }
+
+    [HttpGet("{id}")]
+    public async Task<InvoiceDto> Get(int id, [RequestBusiness] Business business) {
+        if (!await invoiceAuthorize.CanReadInvoice(User, id)) {
+            throw new Forbidden();
+        }
+
+        var invoice = await invoiceService.GetByBusiness(business.Id, id);
+        return InvoiceDto.FromInvoice(invoice);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<bool> Delete(int id, [RequestBusiness] Business business) {
+        if (!await invoiceAuthorize.CanDeleteInvoice(User, id)) {
+            throw new Forbidden();
+        }
+
+        var invoice = await invoiceService.GetByBusiness(business.Id, id);
+        await invoiceService.Remove(invoice);
+        return true;
+    }
+
+    [HttpPut("{id}")]
+    public async Task<InvoiceDto> Update(
+        int id, 
+        [FromBody] InvoiceUpdateDto updateInvoiceDto,
+        [RequestBusiness] Business business)
+    {
+        if (!await invoiceAuthorize.CanUpdateInvoice(User, id, updateInvoiceDto)) {
+            throw new Forbidden();
+        }
+
+        var invoice = await invoiceService.GetByBusiness(business.Id, id);
+
+        // Päivitä laskua dtosta
+        updateInvoiceDto.UpdateInvoice(invoice);
+        await invoiceService.Update(invoice);
+
+        // Palauta päivitetty lasku, kierretään tietokannan kautta jotta
+        // data päivittyy oikein
+        return InvoiceDto.FromInvoice(
+            await invoiceService.GetByBusiness(business.Id, id)
+        );
+    }
+
+    [HttpPost]
+    public async Task<InvoiceDto> Create([RequestBusiness] Business business) {
+        if (!await invoiceAuthorize.CanCreateInvoice(User)) {
+            throw new Forbidden();
+        }
+
+        // Huomaa että tässä esimerkissä en ota sisään dataa josta lasku
+        // luotaisiin, sillä haluan että tätä järjestelmää käytettäessä
+        // luodaan aina ensin luonnos, eli tyhjä lasku jota aletaan
+        // muokkaamaan.
+        var invoice = await invoiceService.Create(new Invoice() {
+            BusinessId = business.Id
+        });
+        return InvoiceDto.FromInvoice(invoice);
+    }
+
+    [HttpGet]
+    public async Task<IEnumerable<InvoiceDto>> ListLatest(
+        [RequestBusiness] Business business)
+    {
+        if (!await invoiceAuthorize.CanListInvoices(User)) {
+            throw new Forbidden();
+        }
+
+        return (await invoiceService.ListLatestByBusiness(business.Id))
+            .Select(t => InvoiceDto.FromInvoice(t))
+            .ToList();
+    }
+
+    [HttpPost("{id}/[action]")]
+    public async Task<InvoiceDto> Send(int id, [RequestBusiness] Business business) {
+        if (!await invoiceAuthorize.CanSendInvoice(User, id)) {
+            throw new Forbidden();
+        }
+
+        var invoice = await invoiceService.GetByBusiness(business.Id, id);
+        var sentInvoice = await invoiceService.Send(invoice);
+        return InvoiceDto.FromInvoice(sentInvoice);
+    }
+}
+```
+
+#### RequestBusiness attribuutin toteutus
+
+Tässä on toteutettu edellisen rajapinnan `RequestBusiness` attribuutti. ASP.NET Coressa voi sitoa attribuutilla parametriin arvoja. Tämän attribuutin on tarkoitus hakea kirjautuneen käyttäjän yrityksen olio (Business). Tällöin sitä ei tarvitse hakea jokaisessa actionissa erikseen.
+
+```cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Esimerkki4.Kirjautuminen.Controllers.Dtos;
+using Esimerkki4.Kirjautuminen.Models;
+using Esimerkki4.Kirjautuminen.Mvc;
+using Esimerkki4.Kirjautuminen.Services;
+using Esimerkki4.Kirjautuminen.Stores;
+using IdentityModel;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+
+namespace Esimerkki4.Kirjautuminen.Auth
+{
+    public class RequestBusinessModelBinder : IModelBinder
+    {
+        private readonly UserManager<ApplicationUser> userManager;
+        private readonly BusinessAuthorize businessAuthorize;
+
+        public RequestBusinessModelBinder(UserManager<ApplicationUser> userManager, 
+            BusinessAuthorize authService)
+        {
+            this.userManager = userManager;
+            this.businessAuthorize = authService;
+        }
+
+        public async Task BindModelAsync(ModelBindingContext bindingContext)
+        {
+            bindingContext.Result = ModelBindingResult.Success(
+                await businessAuthorize.RequestBusiness(bindingContext.HttpContext.User)
+            );
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Property, 
+        AllowMultiple = false, Inherited = true)]
+    public class RequestBusinessAttribute : Attribute, IBinderTypeProviderMetadata
+    {
+        public BindingSource BindingSource
+        {
+            get
+            {
+                return new BindingSource(
+                    id: "RequestBusiness",
+                    displayName: "RequestBusiness",
+                    isGreedy: false,
+                    isFromRequest: false);
+            }
+        }
+
+        Type IBinderTypeProviderMetadata.BinderType
+        {
+            get
+            {
+                return typeof(RequestBusinessModelBinder);
+            }
+        }
+
+    }
+}
+```
+
+`RequestBusiness` attribuutti riittä tarkistamaan että käyttäjä on kirjautunut yrityksenä, joten sitä ei välttämättä tarvitse tarkistaa enää erikseen, mutta yllä olevissa esimerkeissä se on tarkistettu.
+
+Attribuuteilla voi joissain tilanteessa parantaa rajapinnan yleisyyttä, esimerkiksi jos vastaavasti tekisi `ClaimsPrincipal` palauttavan attribuutin, niin yhdenkään ohjaimen ei tarvisi enää periytyä `ControllerBase` luokasta. Tällä tavalla voi tehdä huomattavan yleisen rajapinnan, joka ei riipu HTTP protokollasta vaan sitä voisi käyttää esimerkiksi gRPC yhteensopivana soketin ylitse.
+
+Myös resurssipohjaiset tarkistimet voisi toteuttaa omalla attribuutilla, esimerkiksi `[EnsureUser("CanUpdateInvoice")]` joka laitettaisiin käsittelijäkohtaisesti. Tämä helpottaisi tarkistimein dokumentointia sekä vähentäisi ohjaimen riippuvuuksia. Tässä esimerkissä ei kuitenkaan toteuteta omia attribuutteja tätä varten.
+
+
+## TypeScript/JavaScript SDK:n generointi ApiExplorer kirjastolla
+
+Samaan tapaan kuin Swagger osaa generoida rajapintatesterin voidaan generoida oma SDK. Itse olen toteuttanut tämän omana luokkana joka generoi tarpeellisen tyyppiturvallisen TypeScript rangan rajapinnalle. SDK:n generoimalla voidaan toteuttaa 
 

@@ -35,5 +35,19 @@ namespace Esimerkki4.Kirjautuminen.Stores {
             }
             return value;
         }
+
+        public async Task<Business> GetByUserId(int userId) {
+            var value = await dbContext.Business.FirstOrDefaultAsync(t => t.OwnerApplicationUserId == userId);
+            if (value == null) {
+                throw new NotFoundException();
+            }
+
+            return value;
+        }
+
+        public async Task<bool> IsOwnerUser(int userId) {
+            return await dbContext.Business
+                .AnyAsync(t => t.OwnerApplicationUserId == userId);
+        }
     }
 }

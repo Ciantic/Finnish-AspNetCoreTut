@@ -50,5 +50,10 @@ namespace Esimerkki4.Kirjautuminen.Stores {
                 .OrderBy(t => t.Name)
                 .ToListAsync();
         }
+
+        public async Task<bool> OwnedByBusiness(int businessId, int clientId) {
+            return await dbContext.Client
+                .AnyAsync(t => t.BusinessId == businessId && t.Id == clientId);
+        }
     }
 }

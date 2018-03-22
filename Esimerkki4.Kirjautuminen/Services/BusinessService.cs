@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Esimerkki4.Kirjautuminen.Db;
@@ -20,12 +21,31 @@ namespace Esimerkki4.Kirjautuminen.Services {
             this.userManager = userManager;
         }
 
-        public async Task Register(ApplicationUser user, Business business)
+        public async Task<IdentityResult> Register(string email, string password, string title, string firstName, string lastName)
         {
-            // Seuraavat kaksi voisi tehdä tietokanta transactionissa
-            await userManager.CreateAsync(user);
+            // Luo käyttäjä
+            var user = new ApplicationUser { 
+                UserName = email, 
+                Email = email,
+                FirstName = firstName,
+                LastName = lastName
+            };
+            var result = await userManager.CreateAsync(user, password);
+            if (!result.Succeeded) {
+                return result;
+            }
+
+            // Luo yritys
+            var business = new Business() {
+                OwnerApplicationUser = user,
+                Title = title,
+            };
             await businessStore.Create(business);
-            await notificationSender.SendBusinessRegistered(business);
+
+            // Lähetä sähköposti, jossa pyydetään mm varmistamaan sähköpostiosoite
+            var emailConfirmToken = await userManager.GenerateEmailConfirmationTokenAsync(user);                
+            await notificationSender.SendBusinessRegistered(business, emailConfirmToken);            
+            return result;
         }
     }
 }

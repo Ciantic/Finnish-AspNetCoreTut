@@ -20,7 +20,7 @@ namespace Esimerkki4.Kirjautuminen
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
-                .UseUrls("http://*:5050")
+                .UseUrls("http://*:5000")
                 .Build();
     }
 }

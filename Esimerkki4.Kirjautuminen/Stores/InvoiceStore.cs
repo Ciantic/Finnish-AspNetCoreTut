@@ -75,5 +75,22 @@ namespace Esimerkki4.Kirjautuminen.Stores {
                 .OrderBy(t => t.Created)
                 .ToListAsync();
         }
+
+        public async Task<bool> OwnedByBusiness(int businessId, int invoiceId) {
+            return await dbContext.Invoice
+                .AnyAsync(t => t.BusinessId == businessId && t.Id == invoiceId);
+        }
+
+        public async Task<bool> InvoiceRowsBelongToInvoice(int invoiceId, 
+            IEnumerable<int> invoiceRowIds)
+        {
+            var existingInvoiceRowIds = await dbContext.InvoiceRow
+                .Where(t => t.InvoiceId == invoiceId)
+                .Select(t => t.Id)
+                .ToListAsync();
+            
+            // Tarkista että lasku id:t kuuluvat olemassa olevien lasku id:n joukkoon
+            return invoiceRowIds.All(t => existingInvoiceRowIds.Contains(t));
+        }
     }
 }

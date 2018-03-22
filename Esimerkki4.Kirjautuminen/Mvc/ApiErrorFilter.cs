@@ -14,8 +14,12 @@ namespace Esimerkki4.Kirjautuminen.Mvc
                 context.Result = new NotFound().GetResult();
                 context.Exception = null; // Nollaa virhe
                 context.ExceptionHandled = true; // Virhe käsitelty
+            } else if (context.Exception is ApiError)
+            {
+                context.Result = (context.Exception as ApiError).GetResult();
+                context.Exception = null;
+                context.ExceptionHandled = true;
             }
-            // Voit käsitellä tässä filtterissä muitakin exceptioneita
         }
     }
 }

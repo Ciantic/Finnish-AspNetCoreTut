@@ -5,11 +5,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Esimerkki4.Kirjautuminen.Db
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<
+        ApplicationUser, ApplicationRole, int
+    >
     {
         private readonly ILoggerFactory loggerFactory;
 
-        public AppDbContext(DbContextOptions<AppDbContext> options, ILoggerFactory loggerFactory) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options, 
+            ILoggerFactory loggerFactory) : base(options)
         {
             this.loggerFactory = loggerFactory;
         }
@@ -22,10 +25,10 @@ namespace Esimerkki4.Kirjautuminen.Db
 
         public DbSet<Email> Email { get; set; }
 
-        override protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
-            base.OnConfiguring(optionsBuilder);
-            optionsBuilder.EnableSensitiveDataLogging();
-            optionsBuilder.UseLoggerFactory(loggerFactory);
-        }
+        // override protected void OnConfiguring(DbContextOptionsBuilder optionsBuilder) {
+        //     base.OnConfiguring(optionsBuilder);
+        //     optionsBuilder.EnableSensitiveDataLogging();
+        //     optionsBuilder.UseLoggerFactory(loggerFactory);
+        // }
     }
 }

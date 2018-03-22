@@ -2,41 +2,46 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Esimerkki4.Kirjautuminen.Auth;
 using Esimerkki4.Kirjautuminen.Controllers.Dtos;
 using Esimerkki4.Kirjautuminen.Models;
+using Esimerkki4.Kirjautuminen.Mvc;
 using Esimerkki4.Kirjautuminen.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Esimerkki4.Kirjautuminen.Controllers
 {
-    // Tämä määrittelee alkuosaksi "api/values"
+    [Authorize]
     [Route("[controller]")]
-    public class InvoicesController
+    public class InvoicesController : ControllerBase
     {
         private readonly InvoiceService invoiceService;
-        private readonly ClientService clientService;
+        private readonly InvoicesAuthorize invoiceAuthorize;
 
-        public InvoicesController(InvoiceService invoiceService, ClientService clientService)
+        public InvoicesController(InvoiceService invoiceService, InvoicesAuthorize invoiceAuthorize)
         {
             this.invoiceService = invoiceService;
-            this.clientService = clientService;
+            this.invoiceAuthorize = invoiceAuthorize;
         }
 
-        [HttpGet("{id}")] 
-        public async Task<InvoiceDto> Get(int id) {
-            // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
-            // haetaan käyttäjän tiedoista
-            var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, id);
+        [HttpGet("{id}")]
+        public async Task<InvoiceDto> Get(int id, [RequestBusiness] Business business) {
+            if (!await invoiceAuthorize.CanReadInvoice(User, id)) {
+                throw new Forbidden();
+            }
+
+            var invoice = await invoiceService.GetByBusiness(business.Id, id);
             return InvoiceDto.FromInvoice(invoice);
         }
 
         [HttpDelete("{id}")]
-        public async Task<bool> Delete(int id) {
-            // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
-            // haetaan käyttäjän tiedoista
-            var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, id);
+        public async Task<bool> Delete(int id, [RequestBusiness] Business business) {
+            if (!await invoiceAuthorize.CanDeleteInvoice(User, id)) {
+                throw new Forbidden();
+            }
+
+            var invoice = await invoiceService.GetByBusiness(business.Id, id);
             await invoiceService.Remove(invoice);
             return true;
         }
@@ -44,17 +49,14 @@ namespace Esimerkki4.Kirjautuminen.Controllers
         [HttpPut("{id}")]
         public async Task<InvoiceDto> Update(
             int id, 
-            [FromBody] InvoiceUpdateDto updateInvoiceDto)
+            [FromBody] InvoiceUpdateDto updateInvoiceDto,
+            [RequestBusiness] Business business)
         {
-            // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
-            // haetaan käyttäjän tiedoista
-            var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, id);
+            if (!await invoiceAuthorize.CanUpdateInvoice(User, id, updateInvoiceDto)) {
+                throw new Forbidden();
+            }
 
-            // Tästä puuttuu oikeustarkistus että client Id on tämän yrityksen
-            // asiakkaan ID. Sekä tarkistus että laskurivien ID:t eivät vaihdu
-            // laskulta toiselle. Oikeustarkistukset tehdään seuraavassa
-            // esimerkissä
+            var invoice = await invoiceService.GetByBusiness(business.Id, id);
 
             // Päivitä laskua dtosta
             updateInvoiceDto.UpdateInvoice(invoice);
@@ -63,43 +65,44 @@ namespace Esimerkki4.Kirjautuminen.Controllers
             // Palauta päivitetty lasku, kierretään tietokannan kautta jotta
             // data päivittyy oikein
             return InvoiceDto.FromInvoice(
-                await invoiceService.GetByBusiness(businessId, id)
+                await invoiceService.GetByBusiness(business.Id, id)
             );
         }
 
         [HttpPost]
-        public async Task<InvoiceDto> Create() {
+        public async Task<InvoiceDto> Create([RequestBusiness] Business business) {
+            if (!await invoiceAuthorize.CanCreateInvoice(User)) {
+                throw new Forbidden();
+            }
+
             // Huomaa että tässä esimerkissä en ota sisään dataa josta lasku
             // luotaisiin, sillä haluan että tätä järjestelmää käytettäessä
             // luodaan aina ensin luonnos, eli tyhjä lasku jota aletaan
             // muokkaamaan.
-
-            // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
-            // haetaan käyttäjän tiedoista
-            var businessId = 1;
-
             var invoice = await invoiceService.Create(new Invoice() {
-                BusinessId = businessId
+                BusinessId = business.Id
             });
             return InvoiceDto.FromInvoice(invoice);
         }
 
         [HttpGet]
-        public async Task<IEnumerable<InvoiceDto>> ListLatest() {
-            // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
-            // haetaan käyttäjän tiedoista
-            var businessId = 1;
-            return (await invoiceService.ListLatestByBusiness(businessId))
+        public async Task<IEnumerable<InvoiceDto>> ListLatest([RequestBusiness] Business business) {
+            if (!await invoiceAuthorize.CanListInvoices(User)) {
+                throw new Forbidden();
+            }
+
+            return (await invoiceService.ListLatestByBusiness(business.Id))
                 .Select(t => InvoiceDto.FromInvoice(t))
                 .ToList();
         }
 
         [HttpPost("{id}/[action]")]
-        public async Task<InvoiceDto> Send(int id) {
-            // Tässä esimerkissä businessId on vakio, seuraavassa esimerkissä se
-            // haetaan käyttäjän tiedoista
-            var businessId = 1;
-            var invoice = await invoiceService.GetByBusiness(businessId, id);
+        public async Task<InvoiceDto> Send(int id, [RequestBusiness] Business business) {
+            if (!await invoiceAuthorize.CanSendInvoice(User, id)) {
+                throw new Forbidden();
+            }
+
+            var invoice = await invoiceService.GetByBusiness(business.Id, id);
             var sentInvoice = await invoiceService.Send(invoice);
             return InvoiceDto.FromInvoice(sentInvoice);
         }

@@ -19,23 +19,31 @@ namespace Esimerkki4.Kirjautuminen.Services {
         }
 
         // Huomaa rekisteröintiä ei ole täällä, koska se on yrityskohtainen asia
-
         public async Task<bool> ForgotPassword(ApplicationUser user) {
             var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
             await notificationSender.SendForgotPassword(user, resetToken);
             return true;
         }
 
-        public async Task<bool> ResetPassword(ApplicationUser user, string resetToken, string newPassword) {
-            await userManager.ResetPasswordAsync(user, resetToken, newPassword);
-            // Tässä voisi lähettää notifikaation että salasana on vaihdettu
-            return true;
+        public async Task<IdentityResult> ResetPassword(ApplicationUser user, string resetToken, string newPassword) {
+            var result = await userManager.ResetPasswordAsync(user, resetToken, newPassword);
+            
+            if (result.Succeeded) {
+                // Ilmoita käyttäjälle sähköpostitse että salasana on vaihdettu
+                await notificationSender.SendPasswordChanged(user);
+            }
+            return result;
         }
 
-        public async Task<bool> ChangePassword(ApplicationUser user, string currentPassword, string newPassword) {
-            await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
-            // Tässä voisi lähettää notifikaation että salasana on vaihdettu
-            return true;
+        public async Task<IdentityResult> ChangePassword(ApplicationUser user, string currentPassword, string newPassword) {
+            var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
+            if (result.Succeeded) {
+                // Ilmoita käyttäjälle sähköpostitse että salasana on vaihdettu
+                await notificationSender.SendPasswordChanged(user);
+            }
+
+            return result;
         }
     }
 }
