@@ -19,7 +19,7 @@ Tämä dokumentti koostuu viiden esimerkin pohjalle:
 * Esimerkki1.Swagger / [Esimerkkiohjelma](Esimerkki1.Swagger/)
 * Esimerkki2.Tietokanta / [Esimerkkiohjelma](Esimerkki2.Tietokanta/)
 * Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](Esimerkki3.Tietokanta2/)
-* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/) (kesken)
+* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/)
 * Esimerkki5.SDK / Esimerkkiohjelma (kesken)
 
 ## Asennus ja perusteita rajapinnan määrittelemiseksi
@@ -755,7 +755,7 @@ public interface IEmailSender {
 }
 ```
 
-Sekä toteutukselle luokka, tässä esimerkissä ei lähetä sähköpostia vaan se pelkästään tallennetaan `Email` tietokantatauluun, vaikka toteutus lähettäisi sähköpostin se kannattaa myös tallentaa sähköpostitauluun jotta voi helpommin seurata lähetettyjä sähköposteja tai etsiä virheitä:
+Sekä toteutukselle luokka, tässä esimerkissä ei lähetä sähköpostia vaan se pelkästään tallennetaan `Email` tietokantatauluun. Vaikka toteutus lähettäisi sähköpostin se kannattaa myös tallentaa sähköpostitauluun, jotta voi helpommin seurata lähetettyjä sähköposteja tai etsiä virheitä:
 
 ```cs
 public class EmailSender : IEmailSender {
@@ -1790,6 +1790,16 @@ namespace Esimerkki4.Kirjautuminen.Auth
 Attribuuteilla voi joissain tilanteessa parantaa rajapinnan yleisyyttä, esimerkiksi jos vastaavasti tekisi `ClaimsPrincipal` palauttavan attribuutin, niin yhdenkään ohjaimen ei tarvisi enää periytyä `ControllerBase` luokasta. Tällä tavalla voi tehdä huomattavan yleisen rajapinnan, joka ei riipu HTTP protokollasta vaan sitä voisi käyttää esimerkiksi gRPC yhteensopivana soketin ylitse.
 
 Myös resurssipohjaiset tarkistimet voisi toteuttaa omalla attribuutilla, esimerkiksi `[EnsureUser("CanUpdateInvoice")]` joka laitettaisiin käsittelijäkohtaisesti. Tämä helpottaisi tarkistimein dokumentointia sekä vähentäisi ohjaimen riippuvuuksia. Tässä esimerkissä ei kuitenkaan toteuteta omia attribuutteja tätä varten.
+
+Esimerkkiohjelman luokkakaavio näyttää tältä:
+
+TODO: GENEROI LUOKKAKAAVIO TÄHÄN
+
+Esimerkkiohjelman rajapinta näyttää tältä:
+
+![API](swagger-api4.png)
+
+Swagger yksinään ei ole riittävä apu frontendin kehittäjälle, sen takia seuraavassa esimerkissä generoidaan vielä tälle tyyppiturvallinen SDK TypeScriptille jotta sitä voi käyttää helposti esim React/Angular ohjelmassa.
 
 
 ## TypeScript/JavaScript SDK:n generointi ApiExplorer kirjastolla
