@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Esimerkki4.Kirjautuminen.Services {
+namespace Esimerkki4.Kirjautuminen.Auth {
 
     public class ClientsAuthorize
     {

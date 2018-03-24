@@ -20,6 +20,7 @@ using IdentityServer4.Models;
 using IdentityServer4.AccessTokenValidation;
 using Microsoft.AspNetCore.Authentication;
 using System.Text.Encodings.Web;
+using Esimerkki4.Kirjautuminen.Auth;
 
 namespace Esimerkki4.Kirjautuminen
 {
