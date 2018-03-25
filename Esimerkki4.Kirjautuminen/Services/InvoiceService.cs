@@ -31,7 +31,17 @@ namespace Esimerkki4.Kirjautuminen.Services {
             await invoiceStore.Remove(invoice);
         }
 
+        public class InvoiceSendException : Exception {
+            public InvoiceSendException(string message) : base(message)
+            {
+                
+            }
+        }
+
         public async Task<Invoice> Send(Invoice invoice) {
+            if (invoice.Client == null || invoice.Client.Email == "") {
+                throw new InvoiceSendException("Client or client email is missing");
+            }
             invoice.Sent = DateTime.UtcNow;
             await invoiceStore.Update(invoice);
             await notificationSender.SendInvoice(invoice);

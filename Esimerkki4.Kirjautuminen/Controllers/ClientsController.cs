@@ -54,7 +54,7 @@ namespace Esimerkki4.Kirjautuminen.Controllers
                 throw new Forbidden();
             }
 
-            var client = await clientService.GetByBusiness(business.Id, clientDto.Id);
+            var client = await clientService.GetByBusiness(business.Id, id);
 
             // Päivitä laskua dtosta
             clientDto.UpdateClient(client);

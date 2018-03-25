@@ -32,7 +32,7 @@ namespace Esimerkki4.Kirjautuminen.Controllers
         }
 
         [HttpGet("[action]")]
-        public async Task<object> Claims() {
+        public object Claims() {
             // Näyttää kirjautuneen käyttäjän vaateet, tämä demonstroi sitä mitä
             // vaateet tarkoittavat. User on ClaimsPrincipal tyyppinen olio, ei
             // siis ApplicationUser.

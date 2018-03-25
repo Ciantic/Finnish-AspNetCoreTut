@@ -3,6 +3,9 @@ using Esimerkki4.Kirjautuminen.Models;
 
 namespace Esimerkki4.Kirjautuminen.Controllers.Dtos
 {
+    // Tätä samaa ClientDto:ta käytetään hieman laiskasti myös päivittäessä
+    // asiakasta. Käytännössä päivittäessä asiakasta siinä on samat kentät
+    // paitsi Id kenttä.
     public class ClientDto
     {
         public int Id { get; set; }

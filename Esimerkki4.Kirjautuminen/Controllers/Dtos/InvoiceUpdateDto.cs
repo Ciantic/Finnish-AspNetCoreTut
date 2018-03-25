@@ -26,7 +26,7 @@ namespace Esimerkki4.Kirjautuminen.Controllers.Dtos
                     ?? new InvoiceRow() {
                         Invoice = invoice
                     };
-                invoiceRow.Sort = i;
+                invoiceRow.Sort = i; // Järjestysnumero
                 return updatedRowDto.UpdateInvoiceRow(invoiceRow);
             }).ToList();
 

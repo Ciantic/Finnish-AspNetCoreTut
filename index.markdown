@@ -22,6 +22,8 @@ Tämä dokumentti koostuu viiden esimerkin pohjalle:
 * Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/)
 * Esimerkki5.SDK / Esimerkkiohjelma (kesken)
 
+Esimerkkiohjelmissa on paljon koodia jota ei esitellä tässä dokumentissa, joten kaikilta osin esimerkkiohjelmakoodi ei ole testattua ja voi olla paikoin bugista. Ohjelmakoodi on suunniteltu siten että sille on helppo kirjoittaa yksikkötestit, mutta tässä esimerkissä ei ole yksikkötestausta.
+
 ## Asennus ja perusteita rajapinnan määrittelemiseksi
 
 Asenna ensin .NET Core omalle koneelle: [Windows](https://www.microsoft.com/net/learn/get-started/windows), [Linux](https://www.microsoft.com/net/learn/get-started/linuxredhat) tai [MacOS](https://www.microsoft.com/net/learn/get-started/macos)
@@ -1210,7 +1212,6 @@ public class InvoiceUpdateDto {
     public List<InvoiceRowDto> InvoiceRows { get; set; } = new List<InvoiceRowDto>();
 
     public Invoice UpdateInvoice(Invoice invoice) {
-        // Tässä kannattaisi käyttää AutoMapper kirjastoa eikä kirjoittaa näitä käsin
         invoice.Title = Title;
         invoice.ClientId = ClientId;
         
@@ -1222,7 +1223,7 @@ public class InvoiceUpdateDto {
                 ?? new InvoiceRow() {
                     Invoice = invoice
                 };
-            invoiceRow.Sort = i;
+            invoiceRow.Sort = i; // Järjestysnumero
             return updatedRowDto.UpdateInvoiceRow(invoiceRow);
         }).ToList();
 
@@ -1619,10 +1620,9 @@ Lisäksi InvoicesAuthorize täytyy rekisteröidä **Startup.cs** tiedostossa rii
 public class InvoicesController : ControllerBase
 {
     private readonly InvoiceService invoiceService;
-    private readonly InvoiceAuthorize invoiceAuthorize;
+    private readonly InvoicesAuthorize invoiceAuthorize;
 
-    public InvoicesController(InvoiceService invoiceService,
-        InvoiceAuthorize invoiceAuthorize)
+    public InvoicesController(InvoiceService invoiceService, InvoicesAuthorize invoiceAuthorize)
     {
         this.invoiceService = invoiceService;
         this.invoiceAuthorize = invoiceAuthorize;
@@ -1689,9 +1689,7 @@ public class InvoicesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IEnumerable<InvoiceDto>> ListLatest(
-        [RequestBusiness] Business business)
-    {
+    public async Task<IEnumerable<InvoiceDto>> ListLatest([RequestBusiness] Business business) {
         if (!await invoiceAuthorize.CanListInvoices(User)) {
             throw new Forbidden();
         }
@@ -1701,15 +1699,28 @@ public class InvoicesController : ControllerBase
             .ToList();
     }
 
+    public class InvoiceSendError : ApiError<List<string>> {
+        public InvoiceSendError(string message)
+        {
+            this.JsonData = new List<string> { message };
+        }
+    }
+
     [HttpPost("{id}/[action]")]
-    public async Task<InvoiceDto> Send(int id, [RequestBusiness] Business business) {
+    public async Task<InvoiceDto> Send(int id, [RequestBusiness] Business business)
+    {
         if (!await invoiceAuthorize.CanSendInvoice(User, id)) {
             throw new Forbidden();
         }
 
         var invoice = await invoiceService.GetByBusiness(business.Id, id);
-        var sentInvoice = await invoiceService.Send(invoice);
-        return InvoiceDto.FromInvoice(sentInvoice);
+
+        try {
+            var sentInvoice = await invoiceService.Send(invoice);
+            return InvoiceDto.FromInvoice(sentInvoice);
+        } catch (InvoiceSendException ies) {
+            throw new InvoiceSendError(ies.Message);
+        }
     }
 }
 ```
@@ -1791,9 +1802,11 @@ Attribuuteilla voi joissain tilanteessa parantaa rajapinnan yleisyyttä, esimerk
 
 Myös resurssipohjaiset tarkistimet voisi toteuttaa omalla attribuutilla, esimerkiksi `[EnsureUser("CanUpdateInvoice")]` joka laitettaisiin käsittelijäkohtaisesti. Tämä helpottaisi tarkistimein dokumentointia sekä vähentäisi ohjaimen riippuvuuksia. Tässä esimerkissä ei kuitenkaan toteuteta omia attribuutteja tätä varten.
 
-Esimerkkiohjelman luokkakaavio näyttää tältä:
+Esimerkkiohjelman arkkitehtuuri ilmenee suhteellisen hyvin seuraavasta kaaviosta, josta on poistettu juuriluokat, DTO:t sekä MVC helperit:
 
-TODO: GENEROI LUOKKAKAAVIO TÄHÄN
+![API](api4-luokat.png)
+
+Tästä näkee riippuvuudet suhteellisen hyvin, eli storeja käytetään vain servicejen toimesta eikä esimerkiksi ohjaimien toimesta. Auhtorisointiin liittyviä käytetään vain ohjaimista. Nuolenpäät merkitsevät riippuvuussuhdetta, ja näistä voi päätellä että esimerkiksi ohjaimet voi tuhota ilman että se vaikuttaa muuhun ohjelmistoon.
 
 Esimerkkiohjelman rajapinta näyttää tältä:
 

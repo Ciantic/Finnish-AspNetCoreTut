@@ -9,6 +9,7 @@ using Esimerkki4.Kirjautuminen.Mvc;
 using Esimerkki4.Kirjautuminen.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using static Esimerkki4.Kirjautuminen.Services.InvoiceService;
 
 namespace Esimerkki4.Kirjautuminen.Controllers
 {
@@ -96,15 +97,28 @@ namespace Esimerkki4.Kirjautuminen.Controllers
                 .ToList();
         }
 
+        public class InvoiceSendError : ApiError<List<string>> {
+            public InvoiceSendError(string message)
+            {
+                this.JsonData = new List<string> { message };
+            }
+        }
+
         [HttpPost("{id}/[action]")]
-        public async Task<InvoiceDto> Send(int id, [RequestBusiness] Business business) {
+        public async Task<InvoiceDto> Send(int id, [RequestBusiness] Business business)
+        {
             if (!await invoiceAuthorize.CanSendInvoice(User, id)) {
                 throw new Forbidden();
             }
 
             var invoice = await invoiceService.GetByBusiness(business.Id, id);
-            var sentInvoice = await invoiceService.Send(invoice);
-            return InvoiceDto.FromInvoice(sentInvoice);
+
+            try {
+                var sentInvoice = await invoiceService.Send(invoice);
+                return InvoiceDto.FromInvoice(sentInvoice);
+            } catch (InvoiceSendException ies) {
+                throw new InvoiceSendError(ies.Message);
+            }
         }
     }
 }

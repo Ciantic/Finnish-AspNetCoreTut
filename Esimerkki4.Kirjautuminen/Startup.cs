@@ -113,6 +113,7 @@ namespace Esimerkki4.Kirjautuminen
             // Authorizations
             services.AddTransient<BusinessAuthorize, BusinessAuthorize>();
             services.AddTransient<InvoicesAuthorize, InvoicesAuthorize>();
+            services.AddTransient<ClientsAuthorize, ClientsAuthorize>();
 
             // Stores
             services.AddTransient<BusinessStore, BusinessStore>();
