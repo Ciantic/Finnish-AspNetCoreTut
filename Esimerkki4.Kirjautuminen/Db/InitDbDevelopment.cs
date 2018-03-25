@@ -158,8 +158,6 @@ namespace Esimerkki4.Kirjautuminen.Db
             );
         }
 
-        private int applicationUserIndex = 1;
-
         private ApplicationUser GenerateApplicationUser(string emailPrefix) {
             var email = GenerateUniqueEmail(emailPrefix);
             return new ApplicationUser() {

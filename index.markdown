@@ -20,7 +20,6 @@ Tämä dokumentti koostuu viiden esimerkin pohjalle:
 * Esimerkki2.Tietokanta / [Esimerkkiohjelma](Esimerkki2.Tietokanta/)
 * Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](Esimerkki3.Tietokanta2/)
 * Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/)
-* Esimerkki5.SDK / Esimerkkiohjelma (kesken)
 
 Esimerkkiohjelmissa on paljon koodia jota ei esitellä tässä dokumentissa, joten kaikilta osin esimerkkiohjelmakoodi ei ole testattua ja voi olla paikoin bugista. Ohjelmakoodi on suunniteltu siten että sille on helppo kirjoittaa yksikkötestit, mutta tässä esimerkissä ei ole yksikkötestausta.
 
@@ -1812,10 +1811,18 @@ Esimerkkiohjelman rajapinta näyttää tältä:
 
 ![API](swagger-api4.png)
 
-Swagger yksinään ei ole riittävä apu frontendin kehittäjälle, sen takia seuraavassa esimerkissä generoidaan vielä tälle tyyppiturvallinen SDK TypeScriptille jotta sitä voi käyttää helposti esim React/Angular ohjelmassa.
+Swagger yksinään ei ole riittävä apu käyttöliittymän kehittäjälle, sen takia seuraavassa esimerkissä generoidaan vielä tälle tyyppiturvallinen SDK TypeScriptille jotta sitä voi käyttää helposti esim React/Angular ohjelmassa.
 
 
 ## TypeScript/JavaScript SDK:n generointi ApiExplorer kirjastolla
 
-Samaan tapaan kuin Swagger osaa generoida rajapintatesterin voidaan generoida oma SDK. Itse olen toteuttanut tämän omana luokkana joka generoi tarpeellisen tyyppiturvallisen TypeScript rangan rajapinnalle. SDK:n generoimalla voidaan toteuttaa 
+Samaan tapaan kuin Swagger osaa generoida rajapintatesterin voidaan generoida oma SDK. Tarkoituksena tässä on tehdä rajapinta SDK joka päivittyy automaattisesti kun C# backendiä muokataan. Tämä vähentää huomattavasti käyttöliittymään tulevia virheitä sillä kaikki muutokset jotka backendiin tehdään näkyvät virheinä käyttöliittymää kääntäessä tai muokatessa.
+
+Olen toteuttanut tämän omana luokkana joka generoi tarpeellisen tyyppiturvallisen TypeScript rangan rajapinnalle. En käy tässä lävitse koko generointi koodia, vain oleellisen osan siitä. Esimerkki koko generointi koodista löytyy `Esimerkki4.Kirjautuminen.Mvc.GenSdk` luokasta. Rakentamani generaattori ei ole täydellinen, mutta on riittävä siihen että se osaa generoida SDK:n esimerkkiohjelman rajapinnalle.
+
+### ApiExplorer kirjasto
+
+ASP.NET Coressa on ApiExplorer kirjasto jolla voidaan käydä lävitse jokainen ohjain ja listata sen metodit. Sitä voi yksinkertaisimmillaan käyttää näin:
+
+
 

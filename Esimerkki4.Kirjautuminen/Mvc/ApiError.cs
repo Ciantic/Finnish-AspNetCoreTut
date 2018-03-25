@@ -27,6 +27,7 @@ namespace Esimerkki4.Kirjautuminen.Mvc
             };
         }
     }
+    
     abstract public class ApiError<T> : ApiError
         where 
             T : class, new()
