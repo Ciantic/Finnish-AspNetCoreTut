@@ -164,11 +164,13 @@ namespace Esimerkki4.Kirjautuminen
 
             using (var scoped = app.ApplicationServices.CreateScope())
             {
-                scoped.ServiceProvider.GetRequiredService<IInitDb>().Init().GetAwaiter().GetResult();
+                scoped.ServiceProvider.GetRequiredService<IInitDb>()
+                    .Init().GetAwaiter().GetResult();
 
                 // Generoi SDK joka kerta kun ohjelma käynnistetään Development tilassa
                 if (env.IsDevelopment()) {
-                    scoped.ServiceProvider.GetRequiredService<GenSdk>().Generate(new GenSdkOptions());
+                    scoped.ServiceProvider.GetRequiredService<GenSdk>()
+                        .Generate(new GenSdkOptions());
                 }
             }
         }

@@ -1,8 +1,10 @@
 # C# ja ASP.NET Core 2.0
 
-ASP.NET Core on Microsoftin tekemä web-palvelinohjelmointiin tarkoitettu ohjelmistokehys. Ensimmäinen versio tuli 2016, ja uusin versio tällä hetkellä on 2.0 joka on julkaistu 2017 elokuussa. ASP.NETistä on vanhempi versio jota on kehitetty vuodesta 2002 mutta ASP.NET Core on kokonaan uudelleenkirjoitettu versio joka ei ole taaksepäin yhteensopiva.
+Tämän dokumentin on kirjoittanut Jari Pennanen, 2018.
 
-Samalla Microsoft julkaisi .NET Core ohljelmointiympäristön ja työkalut jotka toimivat useassa käyttöjärjestelmässä toisin kuin vanhemmat C# .NET Framework työkalut. .NET Corelle suunnattua ohjelmaa voidaan ajaa esimerkiksi pienissä Linux virtuaalikoneissa, macOS:llä tai Windowsilla.
+ASP.NET Core on Microsoftin tekemä web-palvelinohjelmointiin tarkoitettu ohjelmistokehys. Ensimmäinen versio tuli 2016, ja uusin versio tällä hetkellä on 2.0 joka on julkaistu 2017 elokuussa. ASP.NETistä on vanhempi versio jota on kehitetty vuodesta 2002 mutta ASP.NET Core on kokonaan uudelleenkirjoitettu versio, joka ei ole taaksepäin yhteensopiva.
+
+Samalla Microsoft julkaisi .NET Core ohjelmointiympäristön ja työkalut jotka toimivat useassa käyttöjärjestelmässä toisin kuin vanhemmat C# .NET Framework työkalut. .NET Corelle suunnattua ohjelmaa voidaan ajaa esimerkiksi pienissä Linux virtuaalikoneissa, macOS:llä tai Windowsilla.
 
 ASP.NET Core sisältää useita kirjastoja, joista käsittelen tärkeimpiä:
 
@@ -10,20 +12,21 @@ ASP.NET Core sisältää useita kirjastoja, joista käsittelen tärkeimpiä:
 * Entity Framework Core - Microsoftin tekemä tietokantakirjasto ja ORM.
 * Identity Core - Kirjautumisjärjestelmän ja käyttäjien hallintaa.
 
-Asennan myös ohjelmaan [Swagger REST-rajapintatesterin](https://swagger.io/).
+Seuraavissa kohdissa esimerkkinä rakennettu ohjelma toimii kaikilla .NET Core ympäristöillä. Asennan myös ohjelmaan [Swagger REST-rajapintatesterin](https://swagger.io/). 
 
-Seuraavissa kohdissa esimerkkinä rakennettu ohjelma toimii kaikilla .NET Core ympäristöillä.
+Tämä dokumentti koostuu neljän esimerkin pohjalle:
 
-Tämä dokumentti koostuu viiden esimerkin pohjalle:
-
-* Esimerkki1.Swagger / [Esimerkkiohjelma](Esimerkki1.Swagger/)
-* Esimerkki2.Tietokanta / [Esimerkkiohjelma](Esimerkki2.Tietokanta/)
-* Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](Esimerkki3.Tietokanta2/)
-* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/)
+* Esimerkki1.Swagger / [Esimerkkiohjelma](Esimerkki1.Swagger/) sekä [video](https://www.youtube.com/watch?v=S96gkHPsTmo)
+* Esimerkki2.Tietokanta / [Esimerkkiohjelma](Esimerkki2.Tietokanta/) sekä [video](https://youtu.be/NXBYvyIYhoY)
+* Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](Esimerkki3.Tietokanta2/) sekä [video](https://youtu.be/SowGf0t2LPQ)
+* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/) sekä video (kesken)
+    * Tässä esimerkissä on myös SDK:n generointi TypeScriptille
 
 Esimerkkiohjelmissa on paljon koodia jota ei esitellä tässä dokumentissa, joten kaikilta osin esimerkkiohjelmakoodi ei ole testattua ja voi olla paikoin bugista. Ohjelmakoodi on suunniteltu siten että sille on helppo kirjoittaa yksikkötestit, mutta tässä esimerkissä ei ole yksikkötestausta.
 
-## Asennus ja perusteita rajapinnan määrittelemiseksi
+## Esimerkki1 / Asennus ja perusteita rajapinnan määrittelemiseksi
+
+Tästä esimerkistä on myös [video](https://www.youtube.com/watch?v=S96gkHPsTmo), jossa käsitellään sama esimerkki mutta lyhyemmin.
 
 Asenna ensin .NET Core omalle koneelle: [Windows](https://www.microsoft.com/net/learn/get-started/windows), [Linux](https://www.microsoft.com/net/learn/get-started/linuxredhat) tai [MacOS](https://www.microsoft.com/net/learn/get-started/macos)
 
@@ -268,7 +271,7 @@ Sekä `Configure` metodiin swaggerin käyttöliittymän tarjoileva middleware:
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
-    c.SwaggerEndpoint("/swagger/swagger.json", "API");
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "API");
 });
 ```
 
@@ -282,7 +285,9 @@ Tämän huomaa myös selaamalla Swaggerin tuottamaa testeriä, vain rajapinnan e
 
 [Voit myös tarkastella tämän esimerkin ohjelmakoodeja: Esimerkki1.Swagger](Esimerkki1.Swagger/)
 
-## Tietokantaesimerkki 1. - perusesimerkki Entity Framework Core tietokantakirjastolla
+## Esimerkki2 / Tietokantaesimerkki - perusesimerkki Entity Framework Core tietokantakirjastolla
+
+Tästä esimerkistä on myös [video](https://youtu.be/NXBYvyIYhoY) jossa käsittelen saman asian mutta hieman lyhyemmin.
 
 ASP.NET Core ohjelmistokehys ei pakota käyttämään tiettyä tietokantakirjastoa, mutta Entity Framework Core (EF Core) kirjasto toimii parhaiten ASP.NET Coren kanssa kanssa valmiiksi. EF Core on Microsoftin tekemää tietokantakirjasto joka osaa mm. luoda tietokannan luokkien pohjalta, sisältää Object Relational Mapperin (ORM) ja osaa muuntaa C# LINQ kieltä SQL lauseiksi.
 
@@ -454,9 +459,14 @@ services.AddDbContext<AppDbContext>(o => {
     // SQLite tietokannan nimi
     o.UseSqlite("Data Source=esimerkki.development.db;");
 });
+
+// Tarvitaan IPasswordHasheriä varten, tämä on kirjautumiseen liittyviä asetuksia
+services.AddIdentity<ApplicationUser, ApplicationRole>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
 ```
 
-Tämä määrittelee että `AppDbContext` instanssin täytyy yhdistää `esimerkki.development.db` tiedostossa olevaan tietokantaan.
+`AddDbContext()` rekisteröi `AppDbContext` yhdistysobjektiksi SQLite tietokannalle joka sijaitsee lokaalissa tiedostossa `esimerkki.development.db`.
 
 Tietokanta täytyy luoda koska sitä ei ole vielä luotu, sitä varten listäään `Configure()` metodiin seuraavat rivit:
 
@@ -949,7 +959,9 @@ public class ClientsController : Controller {
 }
 ```
 
-## Tietokantaesimerkki 2. - Repository pattern, palvelut, DTO
+## Esimerkki3 / Toinen tietokantaesimerkki - Repository pattern, palvelut, DTO
+
+Tästä esimerkistä on myös [video](https://youtu.be/SowGf0t2LPQ), jossa käsittelen samaa esimerkkikoodia, mutta se ei korvaa tämän dokumentin sisältöjä.
 
 Pienemmissä ohjelmissa `AppDbContext` tietokantakäsittelijää voi kutsua ohjaimesta suoraan, mutta SQL kyselyiden, ja liiketoimintalogiikan (Business Logic) sekoittaminen ohjaimiin (Controller) tekee asioista hyvin hankalaa isommissa ohjelmistoissa.
 
@@ -959,7 +971,7 @@ Tarkoitus on jakaa ohjelma selkeisiin osiin haasteiden eriyttämisellä (separat
 * Palvelut käyttävät toisia palveluita ja kutsuvat storeja. 
 * Storet tallentavat ja hakevat malleja tietokannasta.
 
-`Controller <-> Service <-> Store`
+`Controller -> Service -> Store`
 
 Tämä esimerkki esittelee miten ohjelma alkaisi rakentumaan. Tähän on otettu vain esimerkki kustakin tasosta, loput osat voi tarkastella ohjelmakoodeista. Muut osat ovat samojen esimerkkien toistamista suurilta osin. Esimerkin ohjelmakoodeissa on paljon muitakin pieniä parannuksia, joita en esittele tässä dokumentissä, esim. testidata generoidaan tietokantaan, tai tietokantayhteysasetukset haetaan asetustiedostosta. Näitä kannattaa katsoa esimerkkikoodeista.
 
@@ -974,7 +986,7 @@ Tietokannan käsittely kannattaa siirtää omiin luokkiinsa, käytän tässä re
 
 Kussakin luokassa on kaikki tietokantaan tehtävät kyselyt, monesti tänne voi tulla kummallisia ja pitkästi nimettyjä metodeja, mutta se ei haittaa. Tarkoituksenani on tehdä metodit siten että SQL-kysely tapahtuu aina Storejen sisällä eli palautusarvot ovat konkreettisia, toinen vaihtoehtoinen tapa olisi palauttaa `IQueryable` jota voi vielä muokata.
 
-Tämä suunnittelumalli ei ole sopiva jos halutaan tietotaulujen (DataGrid) kaltaista rakennetta, tai muuten hyvin dynaamisia kyselyitä esim. hakuja varten. GraphQL on mahdollisesti parempi rajapinta jos tietoa tarvii kysellä useassa muodossa, mutta sille olevat kirjastot eivät ole vielä tarpeeksi kehittyneitä C#/.NET ympäristössä.
+Tämä suunnittelumalli ei ole sopiva jos halutaan palauttaa tietoa useassa muodossa. Esim tietotaulujen (DataGrid) kaltaista rakennetta, tai suodattaa vain tietyt kentät näkyviin,  tai muuten hyvin dynaamisia kyselyitä esim. hakuja varten. GraphQL on mahdollisesti parempi rajapinta jos tietoa tarvii kysellä useassa muodossa, mutta sille olevat kirjastot eivät ole vielä tarpeeksi kehittyneitä C#/.NET ympäristössä.
 
 #### `InvoiceStore.cs` esimerkkinä
 
@@ -1289,7 +1301,7 @@ public class InvoicesController
 
 [Voit myös tarkastella tämän esimerkin ohjelmakoodeja: Esimerkki3.Tietokanta2](Esimerkki3.Tietokanta2/)
 
-## Kirjautumisesimerkki - Identity Core käyttäjä- ja roolienhallintakirjasto
+## Esimerkki4 / Kirjautuminen - Identity Core käyttäjä- ja roolienhallintakirjasto
 
 Microsoftin tekemä Identity Core kirjasto on kokoelma käyttäjä- ja roolienhallintaan tarpeellisia palasia. Tämä kirjasto ei kuitenkaan sisällä toteutusta rajapintatasolla, vaan tarjoaa puitteet toteuttaa oma rajapinta. Rajapintamäärittely sekä tarkempi toiminnallisuus, kuten käyttäjän ja salasanan kysyminen, salasanan resetointi sähköpostien lähettäminen ym. jää jokaisen ohjelman rakennettavaksi.
 
@@ -1805,7 +1817,7 @@ Esimerkkiohjelman arkkitehtuuri ilmenee suhteellisen hyvin seuraavasta kaaviosta
 
 ![API](api4-luokat.png)
 
-Tästä näkee riippuvuudet suhteellisen hyvin, eli storeja käytetään vain servicejen toimesta eikä esimerkiksi ohjaimien toimesta. Auhtorisointiin liittyviä käytetään vain ohjaimista. Nuolenpäät merkitsevät riippuvuussuhdetta, ja näistä voi päätellä että esimerkiksi ohjaimet voi tuhota ilman että se vaikuttaa muuhun ohjelmistoon.
+Tästä näkee riippuvuudet suhteellisen hyvin, eli storeja käytetään vain palvelujen toimesta eikä esimerkiksi ohjaimien toimesta. Autorisointiin liittyviä käytetään vain ohjaimista. Nuolenpäät merkitsevät riippuvuussuhdetta, ja näistä voi päätellä että esimerkiksi ohjaimet voi tuhota ilman että se vaikuttaa muuhun ohjelmistoon.
 
 Esimerkkiohjelman rajapinta näyttää tältä:
 
@@ -1825,4 +1837,126 @@ Olen toteuttanut tämän omana luokkana joka generoi tarpeellisen tyyppiturvalli
 ASP.NET Coressa on ApiExplorer kirjasto jolla voidaan käydä lävitse jokainen ohjain ja listata sen metodit. Sitä voi yksinkertaisimmillaan käyttää näin:
 
 
+```cs
+public class GenSdkSimple
+{
+    private readonly IApiDescriptionGroupCollectionProvider _apiDescriptionsProvider;
 
+    public GenSdkSimple(
+        IApiDescriptionGroupCollectionProvider apiDescriptionsProvider)
+    {
+        _apiDescriptionsProvider = apiDescriptionsProvider;
+    }
+
+    public void Generate()
+    {
+        foreach (var grp in _apiDescriptionsProvider.ApiDescriptionGroups.Items)
+        {
+            foreach (var act in grp.Items)
+            {
+                // Parametrit
+                var pms = string.Join(",", act.ParameterDescriptions
+                    .Select(t => t.Name));
+
+                // Ohjaimen HTTP kysely
+                Console.WriteLine($"{act.HttpMethod}  {act.RelativePath}  {pms}");
+            }
+        }
+    }
+}
+```
+
+Tämä tulostaa esimerkiksi tässä ohjelmassa seuraavan tulosteen:
+
+```text
+GET     Account/Claims
+GET     Account/LoggedIn
+POST    Account/ChangePassword  changePasswordDto
+POST    Account/ForgotPassword  forgotPasswordDto
+POST    Account/ResetPassword  resetPasswordDto
+POST    Business/Register  businessRegisterDto
+GET     Clients/{id}  id
+DELETE  Clients/{id}  id
+PUT     Clients/{id}  id,clientDto
+POST    Clients
+GET     Clients
+GET     Invoices/{id}  id
+DELETE  Invoices/{id}  id
+PUT     Invoices/{id}  id,updateInvoiceDto
+POST    Invoices
+GET     Invoices
+POST    Invoices/{id}/Send  id
+```
+
+Tämä ei tietenkään ole SDK, mutta on helppo kuvitella että samalla rajapinnalla saa tehtyä oman SDK:n generointi työkalun. [Esimerkkiohjelmakoodeissa on valmiina](./Esimerkki4.Kirjautuminen/Mvc/GenSdk.cs) itse tekemäni SDK generaattori TypeScriptille, tämän koodien läpikäynti ei ole oleellista, se on käytännössä tämän yksinkertaisen rajapinnan pohjalta tehty mutta huomattavasti eteenpäin.
+
+### TypeScript SDK esimerkki
+
+Esimerkkiohjelma generoi joka käynnistymisellä seuraavan SDK:n rangan `Api.ts`, jossa on kaikki oleellinen tyypitettynä:
+
+```ts
+/* tslint:disable */
+// Do not edit this file.
+// This file is generated by the C# API
+
+// About this-keyword and <T> in it see: https://github.com/Microsoft/TypeScript/issues/6452
+
+import { request } from "request";
+
+export interface ApiErrors {
+    onError<T>(this: T, errorCode: "Forbidden", cb: (data: null, req?: T) => void): T;
+    onError<T>(this: T, errorCode: "NotFound", cb: (data: null, req?: T) => void): T;
+    onError<T>(this: T, errorCode: "ValidationError", cb: (data: { fields : { [k: string]: { code : string, message : string, data : {  } }[] }, general : { code : string, message : string, data : {  } }[] }, req?: T) => void): T;
+    onError<T>(this: T, errorCode: "ChangePasswordError", cb: (data: string[], req?: T) => void): T;
+    onError<T>(this: T, errorCode: "ResetPasswordError", cb: (data: string[], req?: T) => void): T;
+    onError<T>(this: T, errorCode: "RegisterError", cb: (data: string[], req?: T) => void): T;
+    onError<T>(this: T, errorCode: "InvoiceSendError", cb: (data: string[], req?: T) => void): T;
+}
+export const Api = {
+    Account : {
+        Claims : () =>
+            request<void>(`Account/Claims`, "GET", null, null),
+        LoggedIn : () =>
+            request<{ id : number, email : string }>(`Account/LoggedIn`, "GET", null, null),
+        ChangePassword : (body: { currentPassword : string, newPassword : string }) =>
+            request<boolean>(`Account/ChangePassword`, "POST", body, null),
+        ForgotPassword : (body: { email : string }) =>
+            request<boolean>(`Account/ForgotPassword`, "POST", body, null),
+        ResetPassword : (body: { resetPasswordToken : string, newPassword : string }) =>
+            request<boolean>(`Account/ResetPassword`, "POST", body, null)
+    },
+    Business : {
+        Register : (body: { email : string, title : string, firstName : string, lastName : string, password : string }) =>
+            request<boolean>(`Business/Register`, "POST", body, null)
+    },
+    Clients : {
+        Get : (id: number) =>
+            request<{ id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }>(`Clients/${id}`, "GET", null, null),
+        Delete : (id: number) =>
+            request<boolean>(`Clients/${id}`, "DELETE", null, null),
+        Update : (id: number, body: { id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }) =>
+            request<{ id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }>(`Clients/${id}`, "PUT", body, null),
+        Create : () =>
+            request<{ id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }>(`Clients`, "POST", null, null),
+        List : () =>
+            request<{ id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }[]>(`Clients`, "GET", null, null)
+    },
+    Invoices : {
+        Get : (id: number) =>
+            request<{ id : number, title : string, sent : string, clientId : number | null, client : { id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }, invoiceRows : { id : number | null, name : string, quantity : number, amount : number }[], created : string, modified : string }>(`Invoices/${id}`, "GET", null, null),
+        Delete : (id: number) =>
+            request<boolean>(`Invoices/${id}`, "DELETE", null, null),
+        Update : (id: number, body: { title : string, clientId : number | null, invoiceRows : { id : number | null, name : string, quantity : number, amount : number }[] }) =>
+            request<{ id : number, title : string, sent : string, clientId : number | null, client : { id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }, invoiceRows : { id : number | null, name : string, quantity : number, amount : number }[], created : string, modified : string }>(`Invoices/${id}`, "PUT", body, null),
+        Create : () =>
+            request<{ id : number, title : string, sent : string, clientId : number | null, client : { id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }, invoiceRows : { id : number | null, name : string, quantity : number, amount : number }[], created : string, modified : string }>(`Invoices`, "POST", null, null),
+        ListLatest : () =>
+            request<{ id : number, title : string, sent : string, clientId : number | null, client : { id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }, invoiceRows : { id : number | null, name : string, quantity : number, amount : number }[], created : string, modified : string }[]>(`Invoices`, "GET", null, null),
+        Send : (id: number) =>
+            request<{ id : number, title : string, sent : string, clientId : number | null, client : { id : number, name : string, address : string, city : string, postCode : string, email : string, phoneNumber : string }, invoiceRows : { id : number | null, name : string, quantity : number, amount : number }[], created : string, modified : string }>(`Invoices/${id}/Send`, "POST", null, null)
+    }
+};
+
+```
+
+Tarkoitus on että käyttöliittymän tarvitsee toteuttaa vain `request` funktio joka kutsuu rajapintaa. Tälle funktiolle tulee parametrina API kyselyn URL osa, esim `Invoices/5/Send` sekä HTTP metodi, esim `POST` sekä JSON argumentti `body` jos sellanen on, tai mahdollisesti `form` argumentti jos kysely vaatii vanhoja html form parametreja.
