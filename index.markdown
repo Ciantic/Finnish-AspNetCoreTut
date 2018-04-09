@@ -19,7 +19,7 @@ Tämä dokumentti koostuu neljän esimerkin pohjalle:
 * Esimerkki1.Swagger / [Esimerkkiohjelma](Esimerkki1.Swagger/) sekä [video](https://www.youtube.com/watch?v=S96gkHPsTmo)
 * Esimerkki2.Tietokanta / [Esimerkkiohjelma](Esimerkki2.Tietokanta/) sekä [video](https://youtu.be/NXBYvyIYhoY)
 * Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](Esimerkki3.Tietokanta2/) sekä [video](https://youtu.be/SowGf0t2LPQ)
-* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/) sekä video (kesken)
+* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/) sekä [video](https://youtu.be/0b6I7L52urQ)
     * Tässä esimerkissä on myös SDK:n generointi TypeScriptille
 
 Esimerkkiohjelmissa on paljon koodia jota ei esitellä tässä dokumentissa, joten kaikilta osin esimerkkiohjelmakoodi ei ole testattua ja voi olla paikoin bugista. Ohjelmakoodi on suunniteltu siten että sille on helppo kirjoittaa yksikkötestit, mutta tässä esimerkissä ei ole yksikkötestausta.
@@ -1303,6 +1303,8 @@ public class InvoicesController
 
 ## Esimerkki4 / Kirjautuminen - Identity Core käyttäjä- ja roolienhallintakirjasto
 
+Tästä esimerkistä on myös [video](https://youtu.be/0b6I7L52urQ) jossa näytetään sama asia yksinkertaisemmin, sekä esitellään hieman esimerkkiohjelmakoodin esimerkkiä.
+
 Microsoftin tekemä Identity Core kirjasto on kokoelma käyttäjä- ja roolienhallintaan tarpeellisia palasia. Tämä kirjasto ei kuitenkaan sisällä toteutusta rajapintatasolla, vaan tarjoaa puitteet toteuttaa oma rajapinta. Rajapintamäärittely sekä tarkempi toiminnallisuus, kuten käyttäjän ja salasanan kysyminen, salasanan resetointi sähköpostien lähettäminen ym. jää jokaisen ohjelman rakennettavaksi.
 
 Kirjautumisrajapinnalla, eli sillä osalle joka kysyy salasanan ja käyttäjänimen, käytän OpenId Connect standardin [Resource Owner Password Flow menetelmää](http://docs.identityserver.io/en/release/quickstarts/2_resource_owner_passwords.html?highlight=resource%20owner). Tämä on OAuth2.0 helpoin, mutta vajavainen tapa toteuttaa kirjautumisrajapinta. Käytännössä tässä esimerkissä käytetään vain OAuth2.0 osaa OpenId Connect standardista. OpenId Connect sisältää myös muita menetelmiä kuten Implicit flow joka on suositeltu tapa, mutta samalla harvinaisen monimutkainen eikä sovellu esimerkiksi.
@@ -1400,8 +1402,8 @@ Lisää tämän jälkeen autentikointi sekä identityserver4 middlewaret ohjelma
 ```cs
 public void Configure(IApplicationBuilder app, IHostingEnvironment env)
 {
-    app.UseAuthentication(); // Identity coren asetus
     app.UseIdentityServer(); // IdentityServer4 asetus
+    app.UseAuthentication(); // Identity coren asetus
     // Nämä molemmat tulevat ennen UseMvc() kohtaa!
 
     // muut asetuksesi jatkuvat tässä kohti, kuten UseMvc() ...
@@ -1498,6 +1500,8 @@ Palautusarvon pitäisi olla:
 Joka kertoo että kirjautuminen ja tokenin tarkistus toimivat. Koita myös hakea vaateet osoitteesta `http://localhost:5000/Account/Claims` samalla tavalla kuin LoggedIn haettiin. Tämän jälkeen koita syöttää access token myös [JWT.io palveluun](https://jwt.io/). Vaateet ovat siis IdentityServer4:n luomia kenttiä jotka lähetetään jokaisessa HTTP kyselyssä. Vaateita kannattaa luoda ohjelmakohtaisesti sillä näillä voi nopeuttaa käyttäjän tunnistamista ilman että tarvitsee hakea käyttäjää tietokannasta joka kerta. Esimerkiksi käyttäjän yrityksen ID olisi hyvä kenttä omaksi vaateeksi.
 
 ### Swaggeriin lisättävä kirjautuminen
+
+**Huomio!** Huomasin testaillessa että uusin Swagger UI:n versio ei käytä password flowta oikein, ja autentikointi ei toimi. Muokkaa projektisi `.csproj` tiedostoasi ja vaihda versio `Swashbuckle.AspNetCore` riippuvuus versioksi `1.2.0`, aja tämän jälkeen `dotnet restore`.
 
 Jotta Swaggerista on jotain hyötyä rajapintatesterinä kirjautumisen vaativissa sovelluksissa, sille täytyy antaa asetus kirjautumista varten, muokkaa **Startup.cs** tiedostoa:
 
