@@ -16,10 +16,10 @@ Seuraavissa kohdissa esimerkkinä rakennettu ohjelma toimii kaikilla .NET Core y
 
 Tämä dokumentti koostuu neljän esimerkin pohjalle:
 
-* Esimerkki1.Swagger / [Esimerkkiohjelma](Esimerkki1.Swagger/) sekä [video](https://www.youtube.com/watch?v=S96gkHPsTmo)
-* Esimerkki2.Tietokanta / [Esimerkkiohjelma](Esimerkki2.Tietokanta/) sekä [video](https://youtu.be/NXBYvyIYhoY)
-* Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](Esimerkki3.Tietokanta2/) sekä [video](https://youtu.be/SowGf0t2LPQ)
-* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](Esimerkki4.Kirjautuminen/) sekä [video](https://youtu.be/0b6I7L52urQ)
+* Esimerkki1.Swagger / [Esimerkkiohjelma](https://github.com/Ciantic/Finnish-AspNetCoreTut/tree/master/Esimerkki1.Swagger) sekä [video](https://www.youtube.com/watch?v=S96gkHPsTmo)
+* Esimerkki2.Tietokanta / [Esimerkkiohjelma](https://github.com/Ciantic/Finnish-AspNetCoreTut/tree/master/Esimerkki2.Tietokanta) sekä [video](https://youtu.be/NXBYvyIYhoY)
+* Esimerkki3.Tietokanta2 / [Esimerkkiohjelma](https://github.com/Ciantic/Finnish-AspNetCoreTut/tree/master/Esimerkki3.Tietokanta2/) sekä [video](https://youtu.be/SowGf0t2LPQ)
+* Esimerkki4.Kirjautuminen / [Esimerkkiohjelma](https://github.com/Ciantic/Finnish-AspNetCoreTut/tree/master/Esimerkki4.Kirjautuminen) sekä [video](https://youtu.be/0b6I7L52urQ)
     * Tässä esimerkissä on myös SDK:n generointi TypeScriptille
 
 Esimerkkiohjelmissa on paljon koodia jota ei esitellä tässä dokumentissa, joten kaikilta osin esimerkkiohjelmakoodi ei ole testattua ja voi olla paikoin bugista. Ohjelmakoodi on suunniteltu siten että sille on helppo kirjoittaa yksikkötestit, mutta tässä esimerkissä ei ole yksikkötestausta.
